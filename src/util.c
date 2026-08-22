@@ -70,6 +70,25 @@ static int CheckHDD(void) {
     DPRINTF("%s: HDD status is %d\n", __func__, ret);
     return ret;
 }
+
+/* Retry-aware wrapper: HDD needs time to settle after a forced IOP reset,
+ * especially if it was previously spinning under OPL. Without this,
+ * CheckHDD()/mount can race ahead of the drive and return -19 (ENODEV). */
+static int CheckHDD_WithRetry(int maxRetries, int delaySeconds) {
+    int ret;
+    int attempt;
+    for (attempt = 1; attempt <= maxRetries; attempt++) {
+        ret = CheckHDD();
+        if (ret == 0) {
+            DPRINTF("%s: HDD ready after %d attempt(s)\n", __func__, attempt);
+            return ret;
+        }
+        DPRINTF("%s: HDD not ready yet (status %d), attempt %d/%d, retrying in %ds...\n",
+                __func__, ret, attempt, maxRetries, delaySeconds);
+        sleep(delaySeconds);
+    }
+    return ret; /* last status, still not 0 */
+}
 char* HDDerr(const int err) {
     switch (err)
     {
