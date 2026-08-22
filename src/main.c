@@ -67,13 +67,25 @@ int main(int argc, char *argv[])
     if (ret != 0) displayError(error);
 #ifdef HDD
     if (ret == 0) {
-        int mtret=0;
-        if ((mtret=fileXioMount("pfs0:", MountPoint, FIO_MT_RDWR)) < 0) {
+        int mtret = 0;
+        int mountRetries = 5;
+        int attempt;
+
+        for (attempt = 1; attempt <= mountRetries; attempt++) {
+            mtret = fileXioMount("pfs0:", MountPoint, FIO_MT_RDWR);
+            if (mtret >= 0) break;
+
+            DPRINTF("Mount attempt %d/%d failed for \"%s\": err:%d (0x%x), retrying...\n",
+                    attempt, mountRetries, MountPoint, mtret, mtret);
+            sleep(1);
+        }
+
+        if (mtret < 0) {
             sprintf(error, "Error: failed to mount partition \"%s\"!\nerr:%d (0x%x)", MountPoint, mtret, mtret);
             DPRINTF(error);
             displayError(error);
         } else {
-            DPRINTF("Successful HDD boot. mounted %s as pfs0\n", MountPoint);
+            DPRINTF("Successful HDD boot. mounted %s as pfs0 (after %d attempt(s))\n", MountPoint, attempt);
         }
     }
 #endif
