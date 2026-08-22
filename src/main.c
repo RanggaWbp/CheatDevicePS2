@@ -14,6 +14,7 @@
 
 #ifdef HDD
 int getMountInfo(char *path, char *mountString, char *mountPoint, char *newCWD);
+int pfsPathIsHddBootPath(const char *path);
 #include <fileXio_rpc.h>
 #include <assert.h>
 int HDD_USABLE = 0;
@@ -36,56 +37,72 @@ int main(int argc, char *argv[])
 #endif
 #ifdef HDD
     DPRINTF("Checking if booting from HDD\n");
-    if (argc > 0) booting_from_hdd = (strstr(argv[0], "hdd0:")!=NULL)&&(strstr(argv[0], ":pfs:")!=NULL);
-    DPRINTF("Booting from hdd:%d\n", booting_from_hdd);
-    char* BUF = NULL;
-    BUF = strdup(argv[0]); //use strdup, otherwise, path will become `hdd0:`
-    if (BUF==NULL) {
-        DPRINTF("Could not strdup()\n");
+    /*
+     * FIX: uLaunchELF uses "hdd0:PARTITION:pfs:/path" but OPL's elf-loader
+     * uses "hdd0:PARTITION:pfs0:path" (note the "0" - a PFS index, not
+     * present in uLaunchELF's format). The old code only checked for the
+     * literal substring ":pfs:", which never matches ":pfs0:". As a result
+     * booting_from_hdd stayed false when launched from OPL, the HDD/PFS
+     * drivers were never loaded, and the later mount attempt failed with
+     * err:-19 (ENODEV) because the filesystem driver simply didn't exist -
+     * not because of a timing issue. pfsPathIsHddBootPath() below accepts
+     * both "pfs:" and "pfsN:" (any digit count after "pfs").
+     */
+    if (argc > 0) {
+        booting_from_hdd = (strstr(argv[0], "hdd0:") != NULL) &&
+                            pfsPathIsHddBootPath(argv[0]);
     }
-    if (getMountInfo(BUF, NULL, MountPoint, pfspath)) {
-        
-    DPRINTF("MountPoint '%s'\npfspath '%s'\n", MountPoint, pfspath);
-    char *pos = strrchr(pfspath, '/');
-    if (pos != NULL) {
-        pos++;
-        *pos = '\0';
-        char* B = strrchr(pfspath, '/');
-        if (B!=NULL) { //the path includes folders inside the PFS filesystem?
-            pfspath[(B-pfspath+1)]=0; //null terminate after the last '/', where the elf filename should begin?
-            DPRINTF("boot path is not root of pfs\n");
+    DPRINTF("Booting from hdd:%d\n", booting_from_hdd);
+
+    if (booting_from_hdd) {
+        char* BUF = strdup(argv[0]); //use strdup, otherwise, path will become `hdd0:`
+        if (BUF == NULL) {
+            DPRINTF("Could not strdup()\n");
+            displayError("Error: out of memory processing HDD boot path");
+        } else if (getMountInfo(BUF, NULL, MountPoint, pfspath)) {
+            DPRINTF("MountPoint '%s'\npfspath '%s'\n", MountPoint, pfspath);
+            char *pos = strrchr(pfspath, '/');
+            if (pos != NULL) {
+                pos++;
+                *pos = '\0';
+                char* B = strrchr(pfspath, '/');
+                if (B != NULL) { //the path includes folders inside the PFS filesystem?
+                    pfspath[(B - pfspath + 1)] = 0; //null terminate after the last '/', where the elf filename should begin?
+                    DPRINTF("boot path is not root of pfs\n");
+                } else {
+                    strcpy(pfspath, "pfs:");
+                }
+                DPRINTF("chdir: '%s'\n", pfspath);
+                chdir(pfspath);
+            } else {
+                displayError("Error processing HDD boot path (2)");
+            }
+            free(BUF);
         } else {
-            strcpy(pfspath, "pfs:");
+            displayError("Error processing HDD boot path (1)");
         }
-        DPRINTF("chdir: '%s'\n", pfspath);
-        chdir(pfspath);
-    } else displayError("Error processing HDD boot path (2)");
-    } else displayError("Error processing HDD boot path (1)");
+    } else {
+        DPRINTF("Not booting from HDD; skipping HDD boot path parsing\n");
+    }
 #endif
-    
+
     ret = loadModules(booting_from_hdd);
     if (ret != 0) displayError(error);
 #ifdef HDD
-    if (ret == 0) {
-        int mtret = 0;
-        int mountRetries = 5;
-        int attempt;
-
-        for (attempt = 1; attempt <= mountRetries; attempt++) {
-            mtret = fileXioMount("pfs0:", MountPoint, FIO_MT_RDWR);
-            if (mtret >= 0) break;
-
-            DPRINTF("Mount attempt %d/%d failed for \"%s\": err:%d (0x%x), retrying...\n",
-                    attempt, mountRetries, MountPoint, mtret, mtret);
-            sleep(1);
-        }
-
-        if (mtret < 0) {
+    /*
+     * FIX: only attempt the pfs0: mount if an HDD boot was actually
+     * detected. Previously this ran whenever loadModules() returned 0,
+     * even when booting_from_hdd was false (e.g. HDD build launched from
+     * mc: or mass:), causing a spurious mount failure in that case too.
+     */
+    if (ret == 0 && booting_from_hdd) {
+        int mtret=0;
+        if ((mtret=fileXioMount("pfs0:", MountPoint, FIO_MT_RDWR)) < 0) {
             sprintf(error, "Error: failed to mount partition \"%s\"!\nerr:%d (0x%x)", MountPoint, mtret, mtret);
             DPRINTF(error);
             displayError(error);
         } else {
-            DPRINTF("Successful HDD boot. mounted %s as pfs0 (after %d attempt(s))\n", MountPoint, attempt);
+            DPRINTF("Successful HDD boot. mounted %s as pfs0\n", MountPoint);
         }
     }
 #endif
@@ -217,6 +234,47 @@ int getMountInfo(char *path, char *mountString, char *mountPoint, char *newCWD)
 
     if (i > 3)
         free(items[3]);
+
+    return 1;
+}
+
+/**
+ * @brief Returns 1 if the 3rd colon-separated segment of `path` looks like a
+ * PFS mount token - either "pfs" (uLaunchELF style, e.g. "hdd0:+OPL:pfs:/x")
+ * or "pfsN" where N is one or more digits (OPL elf-loader style, e.g.
+ * "hdd0:+OPL:pfs0:x"). Returns 0 otherwise (path is NULL, too short, or the
+ * 3rd segment isn't "pfs"/"pfsN").
+ *
+ * This does not allocate memory and does not modify `path`.
+ */
+int pfsPathIsHddBootPath(const char *path)
+{
+    if (path == NULL)
+        return 0;
+
+    /* must start with "hdd0:" */
+    if (strncmp(path, "hdd0:", 5) != 0)
+        return 0;
+
+    /* find the colon that ends the partition name (2nd colon overall) */
+    const char *afterHdd0 = path + 5;
+    const char *secondColon = strchr(afterHdd0, ':');
+    if (secondColon == NULL)
+        return 0;
+
+    /* the token right after that colon must start with "pfs" */
+    const char *pfsStart = secondColon + 1;
+    if (strncmp(pfsStart, "pfs", 3) != 0)
+        return 0;
+
+    /* skip optional digits after "pfs" - covers "pfs:" and "pfs0:", "pfs1:", ... */
+    const char *afterPfs = pfsStart + 3;
+    while (*afterPfs >= '0' && *afterPfs <= '9')
+        afterPfs++;
+
+    /* the token must be terminated by a colon ("pfs:" or "pfsN:") */
+    if (*afterPfs != ':')
+        return 0;
 
     return 1;
 }
