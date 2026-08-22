@@ -18,7 +18,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        apk add build-base git zip
+        apk add --no-cache build-base git zip gcompat libc6-compat
 
     - uses: actions/checkout@v4
     - run: |
@@ -66,4 +66,3 @@ jobs:
         title: "Latest automated build"
         files: |
                ${{ github.event.repository.name }}/CheatDevicePS2*.zip
-               
