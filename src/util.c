@@ -237,7 +237,7 @@ int loadModules(int booting_from_hdd)
                 return -3;
             }
 
-            static const char hddarg[] = "-o" "\0" "4" "\0" "-n" "\0" "20";
+                       static const char hddarg[] = "-o" "\0" "4" "\0" "-n" "\0" "20";
             ID = LOAD_IRX_BUF(_ps2hdd_irx, sizeof(hddarg), hddarg, &RET);
             DPRINTF(" [PS2HDD]: ret=%d, ID=%d\n", RET, ID);
             if (!IRX_LOAD_SUCCESS()) {
@@ -245,9 +245,12 @@ int loadModules(int booting_from_hdd)
                 return -4;
             }
 
-            HDDSTAT = CheckHDD();
+            /* Give the drive time to settle after the forced IOP reset,
+             * mirroring the sleep() already used for USB device detection. */
+            sleep(1);
+            HDDSTAT = CheckHDD_WithRetry(5, 1); /* up to 5 retries, 1s apart (~5s max) */
             HDD_USABLE = HDDSTAT == 0;
-
+            
             /* PS2FS.IRX */
             if (HDD_USABLE)
             {
