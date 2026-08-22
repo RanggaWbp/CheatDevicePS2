@@ -17,6 +17,8 @@ jobs:
         opts: ["", "HDD=1", "EXFAT=1", "MMCE=1"]
     runs-on: ubuntu-latest
     container: ps2dev/ps2dev:v1.0
+    permissions:
+      contents: read
     steps:
 
     - name: Install dependencies
@@ -47,6 +49,8 @@ jobs:
     if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs: build
+    permissions:
+      contents: write
     env:
       ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
     steps:
