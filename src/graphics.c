@@ -892,6 +892,80 @@ void graphicsDrawSearchBox(const char *text)
     graphicsDrawText(boxX + 10, boxY + 18, COLOR_WHITE, "%s_", text);
 }
 
+/*
+ * Get the actual visible bounding box of normal text.
+ *
+ * graphicsGetWidth() uses the font advance, which includes side bearings.
+ * That is useful for flowing text, but it is not always the exact visible
+ * width of the letters.  For keyboard buttons we want the visible glyphs
+ * themselves to be perfectly centered.
+ */
+static void graphicsGetTextBounds(
+    const char *text,
+    float *minX,
+    float *minY,
+    float *maxX,
+    float *maxY
+)
+{
+    float x = 0.0f;
+    int haveGlyph = 0;
+
+    *minX = 0.0f;
+    *minY = 0.0f;
+    *maxX = 0.0f;
+    *maxY = 0.0f;
+
+    if(!text || !text[0])
+        return;
+
+    while(*text)
+    {
+        unsigned char c = (unsigned char)*text++;
+
+        /*
+         * Keyboard labels are plain text, so special controller
+         * sequences are not expected here.
+         */
+        if(c < STB_SOMEFONT_FIRST_CHAR ||
+           c >= STB_SOMEFONT_FIRST_CHAR + STB_SOMEFONT_NUM_CHARS)
+            continue;
+
+        stb_fontchar *fontChar =
+            &fontdata[c - STB_SOMEFONT_FIRST_CHAR];
+
+        float glyphMinX = x + fontChar->x0f;
+        float glyphMaxX = x + fontChar->x1f;
+        float glyphMinY = fontChar->y0f;
+        float glyphMaxY = fontChar->y1f;
+
+        if(!haveGlyph)
+        {
+            *minX = glyphMinX;
+            *maxX = glyphMaxX;
+            *minY = glyphMinY;
+            *maxY = glyphMaxY;
+            haveGlyph = 1;
+        }
+        else
+        {
+            if(glyphMinX < *minX)
+                *minX = glyphMinX;
+
+            if(glyphMaxX > *maxX)
+                *maxX = glyphMaxX;
+
+            if(glyphMinY < *minY)
+                *minY = glyphMinY;
+
+            if(glyphMaxY > *maxY)
+                *maxY = glyphMaxY;
+        }
+
+        x += fontChar->advance;
+    }
+}
+
 void graphicsDrawKeyboard(
     const char *(*layout)[10],
     int rows,
@@ -924,56 +998,30 @@ void graphicsDrawKeyboard(
     const float marginX = 30.0f;
     const float gapX = 4.0f;
     const float gapY = 5.0f;
-
     const float keyboardTop = 105.0f;
 
-    /*
-     * Keyboard width.
-     */
     float keyboardWidth =
         screenW - (marginX * 2.0f);
 
-    /*
-     * Width of one logical key.
-     *
-     * 10 keys + 9 gaps.
-     */
     float keyW =
         (keyboardWidth - (gapX * (cols - 1))) /
         (float)cols;
 
-    /*
-     * Key height.
-     */
     float keyH;
 
     if(screenH <= 480)
-    {
         keyH = 46.0f;
-    }
     else if(screenH <= 576)
-    {
         keyH = 52.0f;
-    }
     else if(screenH <= 720)
-    {
         keyH = 60.0f;
-    }
     else
-    {
         keyH = 68.0f;
-    }
 
-    /*
-     * Total keyboard height.
-     */
     float keyboardHeight =
         (keyH * (float)rows) +
         (gapY * (float)(rows - 1));
 
-    /*
-     * Keep keyboard above the controller legend.
-     */
     float maxKeyboardBottom =
         screenH - 75.0f;
 
@@ -1018,6 +1066,41 @@ void graphicsDrawKeyboard(
     #define KB_INSET 2.0f
 
     /*
+     * Draw one key and center the actual visible glyphs inside it.
+     */
+    #define KB_DRAW_KEY(KEY_X, KEY_Y, KEY_W, KEY_H, LABEL, SELECTED) \
+    do { \
+        float _boxX = (KEY_X); \
+        float _boxY = (KEY_Y); \
+        float _boxW = (KEY_W); \
+        float _boxH = (KEY_H); \
+        const char *_label = (LABEL); \
+        graphicsColor_t _keyColor = \
+            (SELECTED) ? COLOR_ACCENT : COLOR_CARD_BG; \
+        graphicsDrawQuad( \
+            _boxX + KB_INSET, \
+            _boxY + KB_INSET, \
+            _boxW - (KB_INSET * 2.0f), \
+            _boxH - (KB_INSET * 2.0f), \
+            _keyColor \
+        ); \
+        if(_label && _label[0] != '') \
+        { \
+            float _minX, _minY, _maxX, _maxY; \
+            graphicsGetTextBounds( \
+                _label, &_minX, &_minY, &_maxX, &_maxY); \
+            float _visualW = _maxX - _minX; \
+            float _visualH = _maxY - _minY; \
+            float _textX = \
+                _boxX + ((_boxW - _visualW) / 2.0f) - _minX; \
+            float _textY = \
+                _boxY + ((_boxH - _visualH) / 2.0f) - _minY; \
+            graphicsDrawText( \
+                _textX, _textY, COLOR_WHITE, "%s", _label); \
+        } \
+    } while(0)
+
+    /*
      * ============================================================
      * ROW 0-2
      * ============================================================
@@ -1039,7 +1122,7 @@ void graphicsDrawKeyboard(
             const char *label =
                 layout[row][col];
 
-            if(!label || label[0] == '\0')
+            if(!label || label[0] == '')
                 continue;
 
             float x = KB_X(col);
@@ -1049,48 +1132,13 @@ void graphicsDrawKeyboard(
                 (row == cursorRow &&
                  col == cursorCol);
 
-            graphicsColor_t keyColor =
+            KB_DRAW_KEY(
+                x,
+                y,
+                keyW,
+                keyH,
+                label,
                 selected
-                    ? COLOR_ACCENT
-                    : COLOR_CARD_BG;
-
-            /*
-             * Draw key.
-             */
-            graphicsDrawQuad(
-                x + KB_INSET,
-                y + KB_INSET,
-                keyW - (KB_INSET * 2.0f),
-                keyH - (KB_INSET * 2.0f),
-                keyColor
-            );
-
-            /*
-             * Calculate text width.
-             */
-            float textWidth =
-                graphicsGetWidth(label);
-
-            /*
-             * Exact horizontal center.
-             */
-            float textX =
-                x +
-                ((keyW - textWidth) / 2.0f);
-
-            /*
-             * Vertical baseline.
-             */
-            float textY =
-                y +
-                (keyH * 0.63f);
-
-            graphicsDrawText(
-                textX,
-                textY,
-                COLOR_WHITE,
-                "%s",
-                label
             );
         }
     }
@@ -1100,35 +1148,28 @@ void graphicsDrawKeyboard(
      * BOTTOM ROW
      * ============================================================
      *
-     * CAPS |             SPACE             |    | OK
+     * CAPS |             SPACE             | OK
      *
      * CAPS  = 1 unit
      * SPACE = 8 units
      * OK    = 1 unit
      *
-     * IMPORTANT:
-     *
-     * SPACE is a single rectangle.
-     * No individual cell is drawn inside it.
+     * SPACE is one single rectangle.
      */
 
     if(rows >= 4)
     {
         int bottomRow = 3;
-
         float y = KB_Y(bottomRow);
 
         /*
-         * --------------------------------------------------------
          * CAPS
-         * --------------------------------------------------------
          */
-
         {
             const char *label =
                 layout[bottomRow][0];
 
-            if(label && label[0] != '\0')
+            if(label && label[0] != '')
             {
                 float x = KB_X(0);
 
@@ -1136,48 +1177,22 @@ void graphicsDrawKeyboard(
                     (cursorRow == bottomRow &&
                      cursorCol == 0);
 
-                graphicsColor_t keyColor =
+                KB_DRAW_KEY(
+                    x,
+                    y,
+                    keyW,
+                    keyH,
+                    label,
                     selected
-                        ? COLOR_ACCENT
-                        : COLOR_CARD_BG;
-
-                graphicsDrawQuad(
-                    x + KB_INSET,
-                    y + KB_INSET,
-                    keyW - (KB_INSET * 2.0f),
-                    keyH - (KB_INSET * 2.0f),
-                    keyColor
-                );
-
-                float textWidth =
-                    graphicsGetWidth(label);
-
-                float textX =
-                    x +
-                    ((keyW - textWidth) / 2.0f);
-
-                float textY =
-                    y +
-                    (keyH * 0.63f);
-
-                graphicsDrawText(
-                    textX,
-                    textY,
-                    COLOR_WHITE,
-                    "%s",
-                    label
                 );
             }
         }
 
         /*
-         * --------------------------------------------------------
          * SPACE
-         * --------------------------------------------------------
          *
-         * SPACE occupies logical columns 1 through 8.
+         * Eight logical columns (1 through 8), including seven gaps.
          */
-
         {
             const char *label =
                 layout[bottomRow][1];
@@ -1187,13 +1202,6 @@ void graphicsDrawKeyboard(
             {
                 float x = KB_X(1);
 
-                /*
-                 * Eight logical cells:
-                 *
-                 * 8 * keyW
-                 * +
-                 * 7 * gaps
-                 */
                 float width =
                     (keyW * 8.0f) +
                     (gapX * 7.0f);
@@ -1202,56 +1210,25 @@ void graphicsDrawKeyboard(
                     (cursorRow == bottomRow &&
                      cursorCol == 1);
 
-                graphicsColor_t keyColor =
+                KB_DRAW_KEY(
+                    x,
+                    y,
+                    width,
+                    keyH,
+                    "SPACE",
                     selected
-                        ? COLOR_ACCENT
-                        : COLOR_CARD_BG;
-
-                /*
-                 * ONE single rectangle.
-                 */
-                graphicsDrawQuad(
-                    x + KB_INSET,
-                    y + KB_INSET,
-                    width - (KB_INSET * 2.0f),
-                    keyH - (KB_INSET * 2.0f),
-                    keyColor
-                );
-
-                /*
-                 * Center SPACE text over entire button.
-                 */
-                float textWidth =
-                    graphicsGetWidth("SPACE");
-
-                float textX =
-                    x +
-                    ((width - textWidth) / 2.0f);
-
-                float textY =
-                    y +
-                    (keyH * 0.63f);
-
-                graphicsDrawText(
-                    textX,
-                    textY,
-                    COLOR_WHITE,
-                    "SPACE"
                 );
             }
         }
 
         /*
-         * --------------------------------------------------------
          * OK
-         * --------------------------------------------------------
          */
-
         {
             const char *label =
                 layout[bottomRow][9];
 
-            if(label && label[0] != '\0')
+            if(label && label[0] != '')
             {
                 float x = KB_X(9);
 
@@ -1259,36 +1236,13 @@ void graphicsDrawKeyboard(
                     (cursorRow == bottomRow &&
                      cursorCol == 9);
 
-                graphicsColor_t keyColor =
+                KB_DRAW_KEY(
+                    x,
+                    y,
+                    keyW,
+                    keyH,
+                    label,
                     selected
-                        ? COLOR_ACCENT
-                        : COLOR_CARD_BG;
-
-                graphicsDrawQuad(
-                    x + KB_INSET,
-                    y + KB_INSET,
-                    keyW - (KB_INSET * 2.0f),
-                    keyH - (KB_INSET * 2.0f),
-                    keyColor
-                );
-
-                float textWidth =
-                    graphicsGetWidth(label);
-
-                float textX =
-                    x +
-                    ((keyW - textWidth) / 2.0f);
-
-                float textY =
-                    y +
-                    (keyH * 0.63f);
-
-                graphicsDrawText(
-                    textX,
-                    textY,
-                    COLOR_WHITE,
-                    "%s",
-                    label
                 );
             }
         }
@@ -1320,6 +1274,7 @@ void graphicsDrawKeyboard(
         );
     }
 
+    #undef KB_DRAW_KEY
     #undef KB_X
     #undef KB_Y
     #undef KB_INSET
