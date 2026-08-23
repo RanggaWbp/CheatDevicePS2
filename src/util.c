@@ -8,6 +8,7 @@
 #include "cheats.h"
 #include "settings.h"
 #include <stdio.h>
+#include <string.h>
 #include <ctype.h>
 #include <loadfile.h>
 #include <iopcontrol.h>
@@ -70,25 +71,6 @@ static int CheckHDD(void) {
     DPRINTF("%s: HDD status is %d\n", __func__, ret);
     return ret;
 }
-
-/* Retry-aware wrapper: HDD needs time to settle after a forced IOP reset,
- * especially if it was previously spinning under OPL. Without this,
- * CheckHDD()/mount can race ahead of the drive and return -19 (ENODEV). */
-static int CheckHDD_WithRetry(int maxRetries, int delaySeconds) {
-    int ret;
-    int attempt;
-    for (attempt = 1; attempt <= maxRetries; attempt++) {
-        ret = CheckHDD();
-        if (ret == 0) {
-            DPRINTF("%s: HDD ready after %d attempt(s)\n", __func__, attempt);
-            return ret;
-        }
-        DPRINTF("%s: HDD not ready yet (status %d), attempt %d/%d, retrying in %ds...\n",
-                __func__, ret, attempt, maxRetries, delaySeconds);
-        sleep(delaySeconds);
-    }
-    return ret; /* last status, still not 0 */
-}
 char* HDDerr(const int err) {
     switch (err)
     {
@@ -124,9 +106,28 @@ void poweroffCallback(void *arg)
 }
 #endif
 
+const char *pfsPathGetFilePart(const char *path)
+{
+    const char *p = strstr(path, ":pfs");
+    if(!p)
+        return NULL;
+
+    p += strlen(":pfs");
+    while(*p >= '0' && *p <= '9')
+        p++; // Skip the mount point number, if any
+
+    if(*p != ':')
+        return NULL;
+
+    return p + 1;
+}
+
 int loadModules(int booting_from_hdd)
 {
     int ID, RET, HDDSTAT, filexio_loaded=0, dev9_loaded=0, mmceman_loaded=0;
+#ifdef DEV9
+    int dev9_id=0, dev9_ret=0;
+#endif
     DPRINTF("\n ** Loading main modules **\n");
 
     /* IOP reset routine taken from ps2rd */
@@ -170,6 +171,8 @@ int loadModules(int booting_from_hdd)
     if (booting_from_hdd) {
         ID = LOAD_IRX_BUF_NARG(_ps2dev9_irx, &RET);
         dev9_loaded = IRX_LOAD_SUCCESS();
+        dev9_id = ID;
+        dev9_ret = RET;
     }
 #endif
 
@@ -237,7 +240,7 @@ int loadModules(int booting_from_hdd)
                 return -3;
             }
 
-                       static const char hddarg[] = "-o" "\0" "4" "\0" "-n" "\0" "20";
+            static const char hddarg[] = "-o" "\0" "4" "\0" "-n" "\0" "20";
             ID = LOAD_IRX_BUF(_ps2hdd_irx, sizeof(hddarg), hddarg, &RET);
             DPRINTF(" [PS2HDD]: ret=%d, ID=%d\n", RET, ID);
             if (!IRX_LOAD_SUCCESS()) {
@@ -245,12 +248,9 @@ int loadModules(int booting_from_hdd)
                 return -4;
             }
 
-            /* Give the drive time to settle after the forced IOP reset,
-             * mirroring the sleep() already used for USB device detection. */
-            sleep(1);
-            HDDSTAT = CheckHDD_WithRetry(5, 1); /* up to 5 retries, 1s apart (~5s max) */
+            HDDSTAT = CheckHDD();
             HDD_USABLE = HDDSTAT == 0;
-            
+
             /* PS2FS.IRX */
             if (HDD_USABLE)
             {
@@ -262,7 +262,11 @@ int loadModules(int booting_from_hdd)
                 }
             } else {
                 sprintf(error, "HDD Init Error:\nHDD Status: %d (%s)", HDDSTAT, HDDerr(HDDSTAT));
+                return -6;
             }
+        } else {
+            sprintf(error, "HDD Init error\n%s: ID:%d, RET_%d!", "DEV9.IRX", dev9_id, dev9_ret);
+            return -7;
         }
     }
 #endif
