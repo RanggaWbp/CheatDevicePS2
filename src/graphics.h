@@ -25,7 +25,11 @@ typedef enum {
 } graphicsColor_t;
 
 int initGraphics();
-void graphicsDebugCheckpoint(const char *label); // on-screen debug: shows label, freezes ~1s, then continues
+
+// Logs a labelled boot-stage marker (see main.c). Safe to call before
+// initMenus()/initSettings() since it never touches menu or GS state -
+// it only writes to the debug log (DPRINTF).
+void graphicsDebugCheckpoint(const char *label);
 
 // Draw text at (x,y) with a color
 void graphicsDrawText(float x, float y, graphicsColor_t color, const char *format, ...);
