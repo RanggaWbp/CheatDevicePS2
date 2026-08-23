@@ -896,9 +896,9 @@ void graphicsDrawKeyboard(const char *(*layout)[10], int rows, int cols, int cur
 {
     int w = graphicsGetDisplayWidth();
     int startX = 30;
-    int startY = 110;
+    int startY = 100;
     int keyW = (w - 60) / cols;
-    int keyH = 36;
+    int keyH = 48;
     int row, col;
 
     // Dim backdrop so the keyboard reads as an overlay.
@@ -919,10 +919,14 @@ void graphicsDrawKeyboard(const char *(*layout)[10], int rows, int cols, int cur
             graphicsColor_t keyBg = isSelected ? COLOR_ACCENT : COLOR_CARD_BG;
             float textWidth;
             float textX;
+            // Baseline sits a little below the box's vertical center so
+            // the glyph (which draws upward from its baseline) looks
+            // centered inside the box rather than clinging to the top.
+            float textY = y + (keyH * 0.68f);
 
             // Give every key a visible fill (not black-on-black) so the
             // whole keyboard reads clearly against the dim backdrop.
-            graphicsDrawQuad(x + 2, y, keyW - 4, keyH - 4, keyBg);
+            graphicsDrawQuad(x + 2, y + 2, keyW - 4, keyH - 4, keyBg);
 
             // The space bar spans several adjacent cells; only print its
             // label once, centered on the middle cell of the run.
@@ -932,14 +936,14 @@ void graphicsDrawKeyboard(const char *(*layout)[10], int rows, int cols, int cur
                 {
                     textWidth = graphicsGetWidth("SPACE");
                     textX = x + (keyW * 4) / 2.0f - (textWidth / 2.0f);
-                    graphicsDrawText(textX, y + 24, COLOR_WHITE, "SPACE");
+                    graphicsDrawText(textX, textY, COLOR_WHITE, "SPACE");
                 }
             }
             else
             {
                 textWidth = graphicsGetWidth(label);
                 textX = x + (keyW / 2.0f) - (textWidth / 2.0f);
-                graphicsDrawText(textX, y + 24, COLOR_WHITE, "%s", label);
+                graphicsDrawText(textX, textY, COLOR_WHITE, "%s", label);
             }
         }
     }
