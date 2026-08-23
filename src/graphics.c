@@ -119,6 +119,18 @@ static int vsync_callback()
     return 0;
 }
 
+// Debug-only helper: paints a black bar + label on screen and flips the
+// buffer immediately. If the program hangs right after this call, the
+// label stays on screen forever, telling us the last checkpoint reached.
+// No delay/sleep added: we don't need one, because the checkpoint we
+// care about is whichever one is still frozen on screen.
+void graphicsDebugCheckpoint(const char *label)
+{
+    graphicsDrawQuad(0, 0, graphicsGetDisplayWidth(), 40, COLOR_BLACK);
+    graphicsDrawText(20, 20, COLOR_YELLOW, "CKPT: %s", label);
+    graphicsRender();
+}
+
 int initGraphics()
 {
     if(!initialized)
@@ -174,43 +186,43 @@ int initGraphics()
         STB_SOMEFONT_CREATE(fontdata, (unsigned char(*)[])font.Mem, STB_SOMEFONT_BITMAP_HEIGHT);
         gsKit_texture_upload(gsGlobal, &font);
 
-        DPRINTF("[CKPT] bg png start\n");
         graphicsLoadPNG(&bg, _background_png_start, _background_png_size, 0);
-        DPRINTF("[CKPT] bg png done\n");
         graphicsDrawBackground();
         graphicsDrawText(450, 400, COLOR_WHITE, "Please wait...");
         graphicsRender();
-        DPRINTF("[CKPT] please_wait rendered\n");
+        graphicsDebugCheckpoint("01 bg loaded");
 
-        DPRINTF("[CKPT] check png start\n");
         graphicsLoadPNG(&check, _check_png_start, _check_png_size, 0);
-        DPRINTF("[CKPT] check png done\n");
+        graphicsDebugCheckpoint("02 check loaded");
         graphicsLoadPNG(&gamepad, _gamepad_png_start, _gamepad_png_size, 1);
-        DPRINTF("[CKPT] gamepad png done\n");
+        graphicsDebugCheckpoint("03 gamepad loaded");
         graphicsLoadPNG(&cube, _cube_png_start, _cube_png_size, 1);
-        DPRINTF("[CKPT] cube png done\n");
+        graphicsDebugCheckpoint("04 cube loaded");
         graphicsLoadPNG(&hamburgerIcon, _hamburgerIcon_png_start, _hamburgerIcon_png_size, 0);
-        DPRINTF("[CKPT] hamburger png done\n");
+        graphicsDebugCheckpoint("05 hamburger loaded");
         graphicsLoadPNG(&savemanager, _savemanager_png_start, _savemanager_png_size, 1);
-        DPRINTF("[CKPT] savemanager png done\n");
+        graphicsDebugCheckpoint("06 savemanager loaded");
         graphicsLoadPNG(&flashdrive, _flashdrive_png_start, _flashdrive_png_size, 1);
-        DPRINTF("[CKPT] flashdrive png done\n");
+        graphicsDebugCheckpoint("07 flashdrive loaded");
         graphicsLoadPNG(&memorycard1, _memorycard1_png_start, _memorycard1_png_size, 1);
+        graphicsDebugCheckpoint("08 memcard1 loaded");
         graphicsLoadPNG(&memorycard2, _memorycard2_png_start, _memorycard2_png_size, 1);
-        DPRINTF("[CKPT] memcards png done\n");
+        graphicsDebugCheckpoint("09 memcard2 loaded");
         graphicsLoadPNG(&buttonCross, _buttonCross_png_start, _buttonCross_png_size, 0);
         graphicsLoadPNG(&buttonCircle, _buttonCircle_png_start, _buttonCircle_png_size, 0);
         graphicsLoadPNG(&buttonTriangle, _buttonTriangle_png_start, _buttonTriangle_png_size, 0);
         graphicsLoadPNG(&buttonSquare, _buttonSquare_png_start, _buttonSquare_png_size, 0);
+        graphicsDebugCheckpoint("10 buttons 1-4 loaded");
         graphicsLoadPNG(&buttonStart, _buttonStart_png_start, _buttonStart_png_size, 0);
         graphicsLoadPNG(&buttonSelect, _buttonSelect_png_start, _buttonSelect_png_size, 0);
         graphicsLoadPNG(&buttonL1, _buttonL1_png_start, _buttonL1_png_size, 0);
         graphicsLoadPNG(&buttonL2, _buttonL2_png_start, _buttonL2_png_size, 0);
+        graphicsDebugCheckpoint("11 buttons 5-8 loaded");
         graphicsLoadPNG(&buttonL3, _buttonL3_png_start, _buttonL3_png_size, 0);
         graphicsLoadPNG(&buttonR1, _buttonR1_png_start, _buttonR1_png_size, 0);
         graphicsLoadPNG(&buttonR2, _buttonR2_png_start, _buttonR2_png_size, 0);
         graphicsLoadPNG(&buttonR3, _buttonR3_png_start, _buttonR3_png_size, 0);
-        DPRINTF("[CKPT] all buttons done, initGraphics returning\n");
+        graphicsDebugCheckpoint("12 all textures loaded, returning");
 
         return 1;
     }
