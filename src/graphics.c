@@ -174,19 +174,30 @@ int initGraphics()
         STB_SOMEFONT_CREATE(fontdata, (unsigned char(*)[])font.Mem, STB_SOMEFONT_BITMAP_HEIGHT);
         gsKit_texture_upload(gsGlobal, &font);
 
+        DPRINTF("[CKPT] bg png start\n");
         graphicsLoadPNG(&bg, _background_png_start, _background_png_size, 0);
+        DPRINTF("[CKPT] bg png done\n");
         graphicsDrawBackground();
         graphicsDrawText(450, 400, COLOR_WHITE, "Please wait...");
         graphicsRender();
+        DPRINTF("[CKPT] please_wait rendered\n");
 
+        DPRINTF("[CKPT] check png start\n");
         graphicsLoadPNG(&check, _check_png_start, _check_png_size, 0);
+        DPRINTF("[CKPT] check png done\n");
         graphicsLoadPNG(&gamepad, _gamepad_png_start, _gamepad_png_size, 1);
+        DPRINTF("[CKPT] gamepad png done\n");
         graphicsLoadPNG(&cube, _cube_png_start, _cube_png_size, 1);
+        DPRINTF("[CKPT] cube png done\n");
         graphicsLoadPNG(&hamburgerIcon, _hamburgerIcon_png_start, _hamburgerIcon_png_size, 0);
+        DPRINTF("[CKPT] hamburger png done\n");
         graphicsLoadPNG(&savemanager, _savemanager_png_start, _savemanager_png_size, 1);
+        DPRINTF("[CKPT] savemanager png done\n");
         graphicsLoadPNG(&flashdrive, _flashdrive_png_start, _flashdrive_png_size, 1);
+        DPRINTF("[CKPT] flashdrive png done\n");
         graphicsLoadPNG(&memorycard1, _memorycard1_png_start, _memorycard1_png_size, 1);
         graphicsLoadPNG(&memorycard2, _memorycard2_png_start, _memorycard2_png_size, 1);
+        DPRINTF("[CKPT] memcards png done\n");
         graphicsLoadPNG(&buttonCross, _buttonCross_png_start, _buttonCross_png_size, 0);
         graphicsLoadPNG(&buttonCircle, _buttonCircle_png_start, _buttonCircle_png_size, 0);
         graphicsLoadPNG(&buttonTriangle, _buttonTriangle_png_start, _buttonTriangle_png_size, 0);
@@ -199,6 +210,7 @@ int initGraphics()
         graphicsLoadPNG(&buttonR1, _buttonR1_png_start, _buttonR1_png_size, 0);
         graphicsLoadPNG(&buttonR2, _buttonR2_png_start, _buttonR2_png_size, 0);
         graphicsLoadPNG(&buttonR3, _buttonR3_png_start, _buttonR3_png_size, 0);
+        DPRINTF("[CKPT] all buttons done, initGraphics returning\n");
 
         return 1;
     }
