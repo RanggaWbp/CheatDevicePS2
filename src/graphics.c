@@ -250,7 +250,13 @@ static void graphicsLoadPNG(GSTEXTURE *tex, u8 *data, int len, int linear_filter
     tex->Vram = gsKit_vram_alloc(gsGlobal, gsKit_texture_size(tex->Width, tex->Height, tex->PSM), GSKIT_ALLOC_USERBUFFER);
     tex->Filter = (linear_filtering) ? GS_FILTER_LINEAR : GS_FILTER_NEAREST;
     gsKit_texture_upload(gsGlobal, tex);
-    
+
+    // The texture now lives in VRAM (tex->Vram). The main-RAM staging copy
+    // is only needed during upload, so free it to avoid leaking main RAM
+    // for every texture we load (PS2 only has 32MB total).
+    free(tex->Mem);
+    tex->Mem = NULL;
+
     upng_free(pngTexture);
 }
 
