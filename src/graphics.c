@@ -1270,6 +1270,8 @@ void graphicsDrawKeyboard(
             "{R1} 123/Symbols   "
             "{CROSS} Select   "
             "{TRIANGLE} Backspace   "
+            "{SQUARE} Clear   "
+            "{R2} OK   "
             "{CIRCLE} Close"
         );
     }
