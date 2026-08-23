@@ -57,6 +57,14 @@ typedef struct menuState {
     unsigned int currentItem;
     unsigned int numItems;
     unsigned int numChunks;
+
+    // Search / filter state. When searchActive, drawMenuItems() and the
+    // movement functions operate over filteredIndices instead of items[]
+    // directly.
+    int searchActive;
+    char searchQuery[64];
+    unsigned int *filteredIndices;
+    unsigned int numFiltered;
 } menuState_t;
 
 int initMenus();
@@ -100,6 +108,11 @@ int menuGoToTop();
 int menuGoToBottom();
 int menuGoToNextHeader();
 int menuGoToPreviousHeader();
+
+// Search / filter
+void menuOpenSearch();          // Opens the virtual keyboard for the active menu
+void menuApplySearch(const char *query); // Called by keyboard's onDone callback
+void menuClearSearch();
 
 int menuRender();
 
