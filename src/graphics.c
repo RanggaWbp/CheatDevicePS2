@@ -664,9 +664,9 @@ static void drawMenu(const menuIcon_t icons[], int numIcons, int activeItem)
         GS_SETREG_RGBAQ(0x50, 0x50, 0x50, 0x20, 0x80);
 
     const u64 selected =
-        GS_SETREG_RGBAQ(0x00, 0x00, 0x00, 0x80, 0x80);
+        GS_SETREG_RGBAQ(0x50, 0x50, 0x50, 0x80, 0x80);
 
-    graphicsDrawPromptBox(350, 150);
+    graphicsDrawPromptBoxBlack(350, 150);
     
     for(i = 0; i < numIcons; i++)
     {
@@ -1267,17 +1267,27 @@ void graphicsDrawKeyboard(
         if(controlsY > screenH - 25.0f)
             controlsY = screenH - 25.0f;
 
-        graphicsDrawTextCentered(
-            controlsY,
-            COLOR_MUTED,
-            "{L1} Shift   "
-            "{R1} 123/Symbols   "
-            "{CROSS} Select   "
-            "{TRIANGLE} Backspace   "
-            "{SQUARE} Clear   "
-            "{R2} OK   "
-            "{CIRCLE} Close"
-        );
+            graphicsDrawTextCentered(
+                controlsY,
+                COLOR_MUTED,
+                "{L1} Shift   "
+                "{R1} 123/Symbols"
+            );
+            
+            graphicsDrawTextCentered(
+                controlsY + 24.0f,
+                COLOR_MUTED,
+                "{CROSS} Select   "
+                "{TRIANGLE} Backspace"
+            );
+            
+            graphicsDrawTextCentered(
+                controlsY + 48.0f,
+                COLOR_MUTED,
+                "{SQUARE} Clear   "
+                "{R2} OK   "
+                "{CIRCLE} Close"
+            );
     }
 
     #undef KB_DRAW_KEY
