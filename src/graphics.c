@@ -1,4 +1,5 @@
 #include "dbgprintf.h"
+#include <string.h>
 #include <time.h>
 #include <graph.h>
 #include <stdio.h>
@@ -97,7 +98,11 @@ static u64 graphicsColorTable[] = {
     GS_SETREG_RGBAQ(0xF0,0x00,0x00,0x80,0x80), // COLOR_RED
     GS_SETREG_RGBAQ(0x00,0xF0,0x00,0x80,0x80), // COLOR_GREEN
     GS_SETREG_RGBAQ(0x20,0x20,0xA0,0x80,0x80), // COLOR_BLUE
-    GS_SETREG_RGBAQ(0xF0,0xB0,0x00,0x80,0x80)  // COLOR_YELLOW
+    GS_SETREG_RGBAQ(0xF0,0xB0,0x00,0x80,0x80), // COLOR_YELLOW
+    GS_SETREG_RGBAQ(0x3D,0x7B,0xF0,0x80,0x80), // COLOR_ACCENT (flat blue)
+    GS_SETREG_RGBAQ(0x1A,0x1D,0x24,0x80,0x80), // COLOR_CARD_BG
+    GS_SETREG_RGBAQ(0x22,0x26,0x30,0x80,0x80), // COLOR_CARD_BG_ACTIVE
+    GS_SETREG_RGBAQ(0x8B,0x8E,0x96,0x80,0x80)  // COLOR_MUTED
 };
 
 int VBlankStartSema;
@@ -643,7 +648,7 @@ static void drawPromptBox(float width, float height, u64 color)
 
 void graphicsDrawPromptBox(float width, float height)
 {
-    drawPromptBox(width, height, GS_SETREG_RGBAQ(0x22, 0x22, 0xEE, 0x60, 0x80));
+    drawPromptBox(width, height, graphicsColorTable[COLOR_CARD_BG_ACTIVE]);
 }
 
 void graphicsDrawPromptBoxBlack(float width, float height)
@@ -654,28 +659,59 @@ void graphicsDrawPromptBoxBlack(float width, float height)
 static void drawMenu(const menuIcon_t icons[], int numIcons, int activeItem)
 {
     int i;
-    const u64 unselected = GS_SETREG_RGBAQ(0x50, 0x50, 0x50, 0x20, 0x80);
-    const u64 selected = GS_SETREG_RGBAQ(0x50, 0x50, 0x50, 0x80, 0x80);
-    
-    graphicsDrawPromptBox(350, 150);
-    
+    const int cardW = 130;
+    const int cardH = 110;
+    const int gap = 16;
+    const int borderThickness = 2;
+    const float totalWidth = (cardW * numIcons) + (gap * (numIcons - 1));
+    const float startX = (gsGlobal->Width / 2.0f) - (totalWidth / 2.0f);
+    const float cardY = 150.0f;
+
     for(i = 0; i < numIcons; i++)
     {
-        float x = (gsGlobal->Width / 2.0f) - ((75.0f * numIcons) / 2.0f) + (75.0f * i);
+        float cardX = startX + i * (cardW + gap);
+        int isActive = (activeItem == i);
+
+        if(isActive)
+        {
+            // Accent border: draw a slightly larger accent-colored quad behind
+            // the card fill, leaving a visible border ring around the edges.
+            graphicsDrawQuad(cardX - borderThickness, cardY - borderThickness,
+                              cardW + borderThickness * 2, cardH + borderThickness * 2,
+                              COLOR_ACCENT);
+            graphicsDrawQuad(cardX, cardY, cardW, cardH, COLOR_CARD_BG_ACTIVE);
+        }
+        else
+        {
+            graphicsDrawQuad(cardX, cardY, cardW, cardH, COLOR_CARD_BG);
+        }
+
+        // Center the icon texture within the card, above the label.
+        GSTEXTURE *tex = icons[i].tex;
+        float iconX = cardX + (cardW / 2.0f) - (tex->Width / 2.0f);
+        float iconY = cardY + 18.0f;
+
         gsKit_set_primalpha(gsGlobal, GS_SETREG_ALPHA(0,1,0,1,0), 0);
-        gsKit_prim_sprite_texture(gsGlobal, icons[i].tex,
-                                            x,
-                                            192,
+        gsKit_prim_sprite_texture(gsGlobal, tex,
+                                            iconX,
+                                            iconY,
                                             0,
                                             0,
-                                            x + (icons[i].tex)->Width,
-                                            192 + (icons[i].tex)->Height,
-                                            (icons[i].tex)->Width,
-                                            (icons[i].tex)->Height,
+                                            iconX + tex->Width,
+                                            iconY + tex->Height,
+                                            tex->Width,
+                                            tex->Height,
                                             1,
-                                            (activeItem == i) ? selected : unselected);
-        if (activeItem == i) graphicsDrawTextCentered(265, COLOR_WHITE, icons[i].label);
+                                            0x80808080);
         gsKit_set_primalpha(gsGlobal, GS_BLEND_BACK2FRONT, 0);
+
+        {
+            float textWidth = graphicsGetWidth(icons[i].label);
+            float textX = cardX + (cardW / 2.0f) - (textWidth / 2.0f);
+            graphicsDrawText(textX, cardY + cardH - 20,
+                              isActive ? COLOR_WHITE : COLOR_MUTED,
+                              "%s", icons[i].label);
+        }
     }
 }
 
@@ -874,6 +910,62 @@ void graphicsDrawAboutPage()
     );
 
     displayError(msg);
+}
+
+void graphicsDrawSearchBox(const char *text)
+{
+    int w = graphicsGetDisplayWidth();
+    int boxW = w - 80;
+    int boxX = 40;
+    int boxY = 60;
+
+    graphicsDrawQuad(boxX, boxY, boxW, 26, COLOR_BLACK);
+    graphicsDrawText(boxX + 10, boxY + 18, COLOR_WHITE, "%s_", text);
+}
+
+void graphicsDrawKeyboard(const char *(*layout)[10], int rows, int cols, int cursorRow, int cursorCol)
+{
+    int w = graphicsGetDisplayWidth();
+    int startX = 40;
+    int startY = 100;
+    int keyW = (w - 80) / cols;
+    int keyH = 28;
+    int row, col;
+
+    // Dim backdrop so the keyboard reads as an overlay.
+    graphicsDrawQuad(0, 0, w, graphicsGetDisplayHeight(), COLOR_BLACK);
+
+    for(row = 0; row < rows; row++)
+    {
+        for(col = 0; col < cols; col++)
+        {
+            const char *label = layout[row][col];
+
+            if(!label || label[0] == '\0')
+                continue;
+
+            int x = startX + col * keyW;
+            int y = startY + row * keyH;
+            int isSelected = (row == cursorRow && col == cursorCol);
+
+            graphicsDrawQuad(x + 2, y, keyW - 4, keyH - 4, isSelected ? COLOR_BLUE : COLOR_BLACK);
+
+            // The space bar spans several adjacent cells; only print its
+            // label once, centered on the middle cell of the run.
+            if(strcmp(label, "SPACE") == 0)
+            {
+                if(col == 4)
+                    graphicsDrawText(x + keyW / 2 - 20, y + 18, COLOR_WHITE, "SPACE");
+            }
+            else
+            {
+                graphicsDrawText(x + keyW / 2 - 4, y + 18, COLOR_WHITE, "%s", label);
+            }
+        }
+    }
+
+    graphicsDrawText(startX, startY + rows * keyH + 20, COLOR_WHITE,
+        "L1: shift   R1: numbers/symbols   X: select   Triangle: backspace   O: cancel");
 }
 
 void graphicsRender()
