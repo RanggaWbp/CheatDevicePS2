@@ -892,7 +892,438 @@ void graphicsDrawSearchBox(const char *text)
     graphicsDrawText(boxX + 10, boxY + 18, COLOR_WHITE, "%s_", text);
 }
 
-void graphicsDrawKeyboard(const char *(*layout)[10], int rows, int cols, int cursorRow, int cursorCol)
+void graphicsDrawKeyboard(
+    const char *(*layout)[10],
+    int rows,
+    int cols,
+    int cursorRow,
+    int cursorCol
+)
+{
+    int screenW = graphicsGetDisplayWidth();
+    int screenH = graphicsGetDisplayHeight();
+
+    /*
+     * ============================================================
+     * KEYBOARD GEOMETRY
+     * ============================================================
+     *
+     * Logical grid = 10 columns.
+     *
+     * Rows 0-2:
+     *   10 equal keys.
+     *
+     * Row 3:
+     *   CAPS  = 1 unit
+     *   SPACE = 8 units
+     *   OK    = 1 unit
+     *
+     * SPACE is drawn as ONE rectangle.
+     */
+
+    const float marginX = 30.0f;
+    const float gapX = 4.0f;
+    const float gapY = 5.0f;
+
+    const float keyboardTop = 105.0f;
+
+    /*
+     * Keyboard width.
+     */
+    float keyboardWidth =
+        screenW - (marginX * 2.0f);
+
+    /*
+     * Width of one logical key.
+     *
+     * 10 keys + 9 gaps.
+     */
+    float keyW =
+        (keyboardWidth - (gapX * (cols - 1))) /
+        (float)cols;
+
+    /*
+     * Key height.
+     */
+    float keyH;
+
+    if(screenH <= 480)
+    {
+        keyH = 46.0f;
+    }
+    else if(screenH <= 576)
+    {
+        keyH = 52.0f;
+    }
+    else if(screenH <= 720)
+    {
+        keyH = 60.0f;
+    }
+    else
+    {
+        keyH = 68.0f;
+    }
+
+    /*
+     * Total keyboard height.
+     */
+    float keyboardHeight =
+        (keyH * (float)rows) +
+        (gapY * (float)(rows - 1));
+
+    /*
+     * Keep keyboard above the controller legend.
+     */
+    float maxKeyboardBottom =
+        screenH - 75.0f;
+
+    float startY = keyboardTop;
+
+    if(startY + keyboardHeight > maxKeyboardBottom)
+    {
+        startY =
+            maxKeyboardBottom -
+            keyboardHeight;
+
+        if(startY < 35.0f)
+            startY = 35.0f;
+    }
+
+    /*
+     * ============================================================
+     * BACKGROUND
+     * ============================================================
+     */
+
+    graphicsDrawQuad(
+        0,
+        0,
+        screenW,
+        screenH,
+        COLOR_BLACK
+    );
+
+    /*
+     * ============================================================
+     * NORMAL KEY GEOMETRY
+     * ============================================================
+     */
+
+    #define KB_X(C) \
+        (marginX + ((float)(C) * (keyW + gapX)))
+
+    #define KB_Y(R) \
+        (startY + ((float)(R) * (keyH + gapY)))
+
+    #define KB_INSET 2.0f
+
+    /*
+     * ============================================================
+     * ROW 0-2
+     * ============================================================
+     */
+
+    int row;
+    int col;
+
+    for(row = 0; row < rows; row++)
+    {
+        /*
+         * Bottom row is custom.
+         */
+        if(row == 3)
+            continue;
+
+        for(col = 0; col < cols; col++)
+        {
+            const char *label =
+                layout[row][col];
+
+            if(!label || label[0] == '\0')
+                continue;
+
+            float x = KB_X(col);
+            float y = KB_Y(row);
+
+            int selected =
+                (row == cursorRow &&
+                 col == cursorCol);
+
+            graphicsColor_t keyColor =
+                selected
+                    ? COLOR_ACCENT
+                    : COLOR_CARD_BG;
+
+            /*
+             * Draw key.
+             */
+            graphicsDrawQuad(
+                x + KB_INSET,
+                y + KB_INSET,
+                keyW - (KB_INSET * 2.0f),
+                keyH - (KB_INSET * 2.0f),
+                keyColor
+            );
+
+            /*
+             * Calculate text width.
+             */
+            float textWidth =
+                graphicsGetWidth(label);
+
+            /*
+             * Exact horizontal center.
+             */
+            float textX =
+                x +
+                ((keyW - textWidth) / 2.0f);
+
+            /*
+             * Vertical baseline.
+             */
+            float textY =
+                y +
+                (keyH * 0.63f);
+
+            graphicsDrawText(
+                textX,
+                textY,
+                COLOR_WHITE,
+                "%s",
+                label
+            );
+        }
+    }
+
+    /*
+     * ============================================================
+     * BOTTOM ROW
+     * ============================================================
+     *
+     * CAPS |             SPACE             |    | OK
+     *
+     * CAPS  = 1 unit
+     * SPACE = 8 units
+     * OK    = 1 unit
+     *
+     * IMPORTANT:
+     *
+     * SPACE is a single rectangle.
+     * No individual cell is drawn inside it.
+     */
+
+    if(rows >= 4)
+    {
+        int bottomRow = 3;
+
+        float y = KB_Y(bottomRow);
+
+        /*
+         * --------------------------------------------------------
+         * CAPS
+         * --------------------------------------------------------
+         */
+
+        {
+            const char *label =
+                layout[bottomRow][0];
+
+            if(label && label[0] != '\0')
+            {
+                float x = KB_X(0);
+
+                int selected =
+                    (cursorRow == bottomRow &&
+                     cursorCol == 0);
+
+                graphicsColor_t keyColor =
+                    selected
+                        ? COLOR_ACCENT
+                        : COLOR_CARD_BG;
+
+                graphicsDrawQuad(
+                    x + KB_INSET,
+                    y + KB_INSET,
+                    keyW - (KB_INSET * 2.0f),
+                    keyH - (KB_INSET * 2.0f),
+                    keyColor
+                );
+
+                float textWidth =
+                    graphicsGetWidth(label);
+
+                float textX =
+                    x +
+                    ((keyW - textWidth) / 2.0f);
+
+                float textY =
+                    y +
+                    (keyH * 0.63f);
+
+                graphicsDrawText(
+                    textX,
+                    textY,
+                    COLOR_WHITE,
+                    "%s",
+                    label
+                );
+            }
+        }
+
+        /*
+         * --------------------------------------------------------
+         * SPACE
+         * --------------------------------------------------------
+         *
+         * SPACE occupies logical columns 1 through 8.
+         */
+
+        {
+            const char *label =
+                layout[bottomRow][1];
+
+            if(label &&
+               strcmp(label, "SPACE") == 0)
+            {
+                float x = KB_X(1);
+
+                /*
+                 * Eight logical cells:
+                 *
+                 * 8 * keyW
+                 * +
+                 * 7 * gaps
+                 */
+                float width =
+                    (keyW * 8.0f) +
+                    (gapX * 7.0f);
+
+                int selected =
+                    (cursorRow == bottomRow &&
+                     cursorCol == 1);
+
+                graphicsColor_t keyColor =
+                    selected
+                        ? COLOR_ACCENT
+                        : COLOR_CARD_BG;
+
+                /*
+                 * ONE single rectangle.
+                 */
+                graphicsDrawQuad(
+                    x + KB_INSET,
+                    y + KB_INSET,
+                    width - (KB_INSET * 2.0f),
+                    keyH - (KB_INSET * 2.0f),
+                    keyColor
+                );
+
+                /*
+                 * Center SPACE text over entire button.
+                 */
+                float textWidth =
+                    graphicsGetWidth("SPACE");
+
+                float textX =
+                    x +
+                    ((width - textWidth) / 2.0f);
+
+                float textY =
+                    y +
+                    (keyH * 0.63f);
+
+                graphicsDrawText(
+                    textX,
+                    textY,
+                    COLOR_WHITE,
+                    "SPACE"
+                );
+            }
+        }
+
+        /*
+         * --------------------------------------------------------
+         * OK
+         * --------------------------------------------------------
+         */
+
+        {
+            const char *label =
+                layout[bottomRow][9];
+
+            if(label && label[0] != '\0')
+            {
+                float x = KB_X(9);
+
+                int selected =
+                    (cursorRow == bottomRow &&
+                     cursorCol == 9);
+
+                graphicsColor_t keyColor =
+                    selected
+                        ? COLOR_ACCENT
+                        : COLOR_CARD_BG;
+
+                graphicsDrawQuad(
+                    x + KB_INSET,
+                    y + KB_INSET,
+                    keyW - (KB_INSET * 2.0f),
+                    keyH - (KB_INSET * 2.0f),
+                    keyColor
+                );
+
+                float textWidth =
+                    graphicsGetWidth(label);
+
+                float textX =
+                    x +
+                    ((keyW - textWidth) / 2.0f);
+
+                float textY =
+                    y +
+                    (keyH * 0.63f);
+
+                graphicsDrawText(
+                    textX,
+                    textY,
+                    COLOR_WHITE,
+                    "%s",
+                    label
+                );
+            }
+        }
+    }
+
+    /*
+     * ============================================================
+     * CONTROLLER GUIDE
+     * ============================================================
+     */
+
+    {
+        float controlsY =
+            startY +
+            keyboardHeight +
+            20.0f;
+
+        if(controlsY > screenH - 25.0f)
+            controlsY = screenH - 25.0f;
+
+        graphicsDrawTextCentered(
+            controlsY,
+            COLOR_MUTED,
+            "{L1} Shift   "
+            "{R1} 123/Symbols   "
+            "{CROSS} Select   "
+            "{TRIANGLE} Backspace   "
+            "{CIRCLE} Close"
+        );
+    }
+
+    #undef KB_X
+    #undef KB_Y
+    #undef KB_INSET
+}
 {
     int w = graphicsGetDisplayWidth();
     int startX = 30;
