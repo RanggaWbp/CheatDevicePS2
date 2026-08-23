@@ -1084,7 +1084,7 @@ void graphicsDrawKeyboard(
             _boxH - (KB_INSET * 2.0f), \
             _keyColor \
         ); \
-        if(_label && _label[0] != '') \
+        if(_label && _label[0] != '\0') \
         { \
             float _minX, _minY, _maxX, _maxY; \
             graphicsGetTextBounds( \
@@ -1122,7 +1122,7 @@ void graphicsDrawKeyboard(
             const char *label =
                 layout[row][col];
 
-            if(!label || label[0] == '')
+            if(!label || label[0] == '\0')
                 continue;
 
             float x = KB_X(col);
@@ -1169,7 +1169,7 @@ void graphicsDrawKeyboard(
             const char *label =
                 layout[bottomRow][0];
 
-            if(label && label[0] != '')
+            if(label && label[0] != '\0')
             {
                 float x = KB_X(0);
 
@@ -1228,7 +1228,7 @@ void graphicsDrawKeyboard(
             const char *label =
                 layout[bottomRow][9];
 
-            if(label && label[0] != '')
+            if(label && label[0] != '\0')
             {
                 float x = KB_X(9);
 
