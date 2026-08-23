@@ -17,7 +17,11 @@ typedef enum {
     COLOR_RED,
     COLOR_GREEN,
     COLOR_BLUE,
-    COLOR_YELLOW
+    COLOR_YELLOW,
+    COLOR_ACCENT,     // Flat accent blue for active/highlighted UI elements
+    COLOR_CARD_BG,    // Dark card background for menu items
+    COLOR_CARD_BG_ACTIVE, // Slightly lighter card background for active items
+    COLOR_MUTED        // Muted gray text for inactive labels
 } graphicsColor_t;
 
 int initGraphics();
@@ -48,6 +52,14 @@ void graphicsDrawPromptBox(float width, float height);
 void graphicsDrawPromptBoxBlack(float width, float height);
 // Draw a quad
 void graphicsDrawQuad(float x, float y, float xsize, float ysize, graphicsColor_t color);
+
+// Draws the virtual keyboard overlay used for the game-list search feature.
+// layout is a [rows][cols] grid of key labels ("" for empty/skip cells).
+// Highlights the cell at (cursorRow, cursorCol).
+void graphicsDrawKeyboard(const char *(*layout)[10], int rows, int cols, int cursorRow, int cursorCol);
+
+// Draws the search input box showing the current typed text.
+void graphicsDrawSearchBox(const char *text);
 
 // Get total width of characters in string
 float graphicsGetWidth(const char *str);
