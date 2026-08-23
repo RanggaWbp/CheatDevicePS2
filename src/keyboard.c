@@ -5,66 +5,201 @@
 #include "pad.h"
 #include "graphics.h"
 
-// Each layout is a grid of rows/cols. Regular keys hold their own label
-// (e.g. "a", "5"). Special keys use fixed labels handled in activateKey():
-// "DEL"=backspace, "SPACE"=space, "OK"=confirm, "CAPS"/"caps"=shift,
-// "123"=numbers layout, "SYM"=symbols layout, "ABC"=back to lowercase.
+/*
+ * ============================================================
+ * PS2 HOMEBREW VIRTUAL KEYBOARD
+ * ============================================================
+ *
+ * Logical grid:
+ *
+ *  Q W E R T Y U I O P
+ *  A S D F G H J K L DEL
+ *  Z X C V B N M , . 123
+ *  CAPS       SPACE        OK
+ *
+ * Bottom row:
+ *   CAPS  = column 0
+ *   SPACE = column 1, rendered as ONE wide button
+ *   OK    = column 9
+ *
+ * Empty cells are not rendered.
+ */
+
 #define KB_COLS 10
 #define KB_ROWS 4
 
-static const char *layoutLower[KB_ROWS][KB_COLS] = {
-    {"q","w","e","r","t","y","u","i","o","p"},
-    {"a","s","d","f","g","h","j","k","l","DEL"},
-    {"z","x","c","v","b","n","m",",",".","123"},
-    {"CAPS","SPACE","SPACE","SPACE","SPACE","SPACE","SPACE","SPACE","SPACE","OK"}
+/* ============================================================
+ * LOWERCASE
+ * ============================================================ */
+
+static const char *layoutLower[KB_ROWS][KB_COLS] =
+{
+    {
+        "q", "w", "e", "r", "t",
+        "y", "u", "i", "o", "p"
+    },
+
+    {
+        "a", "s", "d", "f", "g",
+        "h", "j", "k", "l", "DEL"
+    },
+
+    {
+        "z", "x", "c", "v", "b",
+        "n", "m", ",", ".", "123"
+    },
+
+    {
+        "CAPS", "SPACE", "", "", "",
+        "", "", "", "", "OK"
+    }
 };
 
-static const char *layoutUpper[KB_ROWS][KB_COLS] = {
-    {"Q","W","E","R","T","Y","U","I","O","P"},
-    {"A","S","D","F","G","H","J","K","L","DEL"},
-    {"Z","X","C","V","B","N","M",",",".","123"},
-    {"caps","SPACE","SPACE","SPACE","SPACE","SPACE","SPACE","SPACE","SPACE","OK"}
+/* ============================================================
+ * UPPERCASE
+ * ============================================================ */
+
+static const char *layoutUpper[KB_ROWS][KB_COLS] =
+{
+    {
+        "Q", "W", "E", "R", "T",
+        "Y", "U", "I", "O", "P"
+    },
+
+    {
+        "A", "S", "D", "F", "G",
+        "H", "J", "K", "L", "DEL"
+    },
+
+    {
+        "Z", "X", "C", "V", "B",
+        "N", "M", ",", ".", "123"
+    },
+
+    {
+        "caps", "SPACE", "", "", "",
+        "", "", "", "", "OK"
+    }
 };
 
-static const char *layoutNumbers[KB_ROWS][KB_COLS] = {
-    {"1","2","3","4","5","6","7","8","9","0"},
-    {"-","/",":",";","(",")","$","&","@","DEL"},
-    {"#","%","+","=","*","\"","'",".",",","SYM"},
-    {"ABC","SPACE","SPACE","SPACE","SPACE","SPACE","SPACE","SPACE","SPACE","OK"}
+/* ============================================================
+ * NUMBERS
+ * ============================================================ */
+
+static const char *layoutNumbers[KB_ROWS][KB_COLS] =
+{
+    {
+        "1", "2", "3", "4", "5",
+        "6", "7", "8", "9", "0"
+    },
+
+    {
+        "-", "/", ":", ";", "(",
+        ")", "$", "&", "@", "DEL"
+    },
+
+    {
+        "#", "%", "+", "=", "*",
+        "\"", "'", ".", ",", "SYM"
+    },
+
+    {
+        "ABC", "SPACE", "", "", "",
+        "", "", "", "", "OK"
+    }
 };
 
-static const char *layoutSymbols[KB_ROWS][KB_COLS] = {
-    {"[","]","{","}","#","%","^","*","+","="},
-    {"_","\\","|","~","<",">","!","?","'","DEL"},
-    {"-","/",":",";","(",")","$","&","@","123"},
-    {"ABC","SPACE","SPACE","SPACE","SPACE","SPACE","SPACE","SPACE","SPACE","OK"}
+/* ============================================================
+ * SYMBOLS
+ * ============================================================ */
+
+static const char *layoutSymbols[KB_ROWS][KB_COLS] =
+{
+    {
+        "[", "]", "{", "}", "#",
+        "%", "^", "*", "+", "="
+    },
+
+    {
+        "_", "\\", "|", "~", "<",
+        ">", "!", "?", "'", "DEL"
+    },
+
+    {
+        "-", "/", ":", ";", "(",
+        ")", "$", "&", "@", "123"
+    },
+
+    {
+        "ABC", "SPACE", "", "", "",
+        "", "", "", "", "OK"
+    }
 };
 
-static const char *(*layouts[KB_NUM_LAYOUTS])[KB_COLS] = {
-    layoutLower, layoutUpper, layoutNumbers, layoutSymbols
+/* ============================================================
+ * LAYOUT TABLE
+ * ============================================================ */
+
+static const char *(*layouts[KB_NUM_LAYOUTS])[KB_COLS] =
+{
+    layoutLower,
+    layoutUpper,
+    layoutNumbers,
+    layoutSymbols
 };
+
+/* ============================================================
+ * KEYBOARD STATE
+ * ============================================================ */
 
 static kbLayout_t currentLayout = KB_LAYOUT_LOWER;
+
 static int cursorRow = 0;
 static int cursorCol = 0;
+
 static int isOpen = 0;
+
 static char buffer[KEYBOARD_BUFFER_SIZE];
+
 static void (*doneCallback)(const char *text) = NULL;
 
-void keyboardOpen(const char *initialText, void (*onDone)(const char *text))
+/* ============================================================
+ * OPEN
+ * ============================================================ */
+
+void keyboardOpen(
+    const char *initialText,
+    void (*onDone)(const char *text)
+)
 {
     if(initialText)
-        strncpy(buffer, initialText, KEYBOARD_BUFFER_SIZE - 1);
+    {
+        strncpy(
+            buffer,
+            initialText,
+            KEYBOARD_BUFFER_SIZE - 1
+        );
+    }
     else
+    {
         buffer[0] = '\0';
+    }
+
     buffer[KEYBOARD_BUFFER_SIZE - 1] = '\0';
 
     doneCallback = onDone;
+
     currentLayout = KB_LAYOUT_LOWER;
+
     cursorRow = 0;
     cursorCol = 0;
+
     isOpen = 1;
 }
+
+/* ============================================================
+ * CLOSE
+ * ============================================================ */
 
 void keyboardClose()
 {
@@ -72,122 +207,313 @@ void keyboardClose()
     doneCallback = NULL;
 }
 
+/* ============================================================
+ * IS OPEN
+ * ============================================================ */
+
 int keyboardIsOpen()
 {
     return isOpen;
 }
+
+/* ============================================================
+ * GET BUFFER
+ * ============================================================ */
 
 const char *keyboardGetBuffer()
 {
     return buffer;
 }
 
+/* ============================================================
+ * APPEND CHARACTER
+ * ============================================================ */
+
 static void appendChar(const char *key)
 {
-    size_t len = strlen(buffer);
-    size_t keyLen = strlen(key);
+    size_t len;
+    size_t keyLen;
+
+    if(!key)
+        return;
+
+    len = strlen(buffer);
+    keyLen = strlen(key);
 
     if(len + keyLen >= KEYBOARD_BUFFER_SIZE - 1)
-        return; // buffer full
+        return;
 
     strcat(buffer, key);
 }
 
+/* ============================================================
+ * BACKSPACE
+ * ============================================================ */
+
 static void backspace()
 {
     size_t len = strlen(buffer);
+
     if(len > 0)
         buffer[len - 1] = '\0';
 }
 
+/* ============================================================
+ * VALID KEY
+ * ============================================================ */
+
+static int isValidKey(int row, int col)
+{
+    const char *key;
+
+    if(row < 0 || row >= KB_ROWS)
+        return 0;
+
+    if(col < 0 || col >= KB_COLS)
+        return 0;
+
+    key = layouts[currentLayout][row][col];
+
+    if(!key)
+        return 0;
+
+    if(key[0] == '\0')
+        return 0;
+
+    return 1;
+}
+
+/* ============================================================
+ * ACTIVATE KEY
+ * ============================================================ */
+
 static void activateKey()
 {
-    const char *key = layouts[currentLayout][cursorRow][cursorCol];
+    const char *key;
+
+    key = layouts[currentLayout][cursorRow][cursorCol];
 
     if(!key || key[0] == '\0')
         return;
 
+    /* DELETE */
     if(strcmp(key, "DEL") == 0)
+    {
         backspace();
+    }
+
+    /* SPACE */
     else if(strcmp(key, "SPACE") == 0)
+    {
         appendChar(" ");
+    }
+
+    /* OK */
     else if(strcmp(key, "OK") == 0)
     {
         if(doneCallback)
             doneCallback(buffer);
+
         keyboardClose();
     }
+
+    /* CAPS */
     else if(strcmp(key, "CAPS") == 0)
+    {
         currentLayout = KB_LAYOUT_UPPER;
+    }
+
+    /* LOWERCASE */
     else if(strcmp(key, "caps") == 0)
+    {
         currentLayout = KB_LAYOUT_LOWER;
+    }
+
+    /* NUMBERS */
     else if(strcmp(key, "123") == 0)
+    {
         currentLayout = KB_LAYOUT_NUMBERS;
-    else if(strcmp(key, "ABC") == 0)
-        currentLayout = KB_LAYOUT_LOWER;
+    }
+
+    /* SYMBOLS */
     else if(strcmp(key, "SYM") == 0)
+    {
         currentLayout = KB_LAYOUT_SYMBOLS;
+    }
+
+    /* ABC */
+    else if(strcmp(key, "ABC") == 0)
+    {
+        currentLayout = KB_LAYOUT_LOWER;
+    }
+
+    /* NORMAL CHARACTER */
     else
+    {
         appendChar(key);
+    }
+
+    /*
+     * Make sure cursor never points to an empty cell
+     * after changing layout.
+     */
+    if(!isValidKey(cursorRow, cursorCol))
+    {
+        cursorRow = 0;
+        cursorCol = 0;
+    }
 }
 
-// Move cursor, skipping empty placeholder cells (used for wide space bar).
+/* ============================================================
+ * MOVE CURSOR
+ * ============================================================ */
+
 static void moveCursor(int dRow, int dCol)
 {
     int row = cursorRow;
     int col = cursorCol;
-    int attempts = 0;
 
-    do {
+    int attempts = 0;
+    int maxAttempts = KB_ROWS * KB_COLS;
+
+    while(attempts < maxAttempts)
+    {
         row += dRow;
         col += dCol;
 
-        if(row < 0) row = KB_ROWS - 1;
-        if(row >= KB_ROWS) row = 0;
-        if(col < 0) col = KB_COLS - 1;
-        if(col >= KB_COLS) col = 0;
+        /* Horizontal wrap */
+        if(col < 0)
+            col = KB_COLS - 1;
+
+        if(col >= KB_COLS)
+            col = 0;
+
+        /* Vertical wrap */
+        if(row < 0)
+            row = KB_ROWS - 1;
+
+        if(row >= KB_ROWS)
+            row = 0;
 
         attempts++;
-    } while(layouts[currentLayout][row][col][0] == '\0' && attempts < KB_COLS * KB_ROWS);
 
-    cursorRow = row;
-    cursorCol = col;
+        if(isValidKey(row, col))
+        {
+            cursorRow = row;
+            cursorCol = col;
+            return;
+        }
+    }
 }
 
-int keyboardHandlePad(u32 pad_pressed, u32 pad_held)
+/* ============================================================
+ * PAD INPUT
+ * ============================================================ */
+
+int keyboardHandlePad(
+    u32 pad_pressed,
+    u32 pad_held
+)
 {
     if(!isOpen)
         return 0;
 
-    if(pad_held & PAD_UP)
+    /*
+     * Navigation uses PAD_PRESSED instead of PAD_HELD.
+     *
+     * This prevents the cursor from flying across the
+     * keyboard when a direction is held.
+     */
+
+    if(pad_pressed & PAD_UP)
+    {
         moveCursor(-1, 0);
-    else if(pad_held & PAD_DOWN)
+    }
+    else if(pad_pressed & PAD_DOWN)
+    {
         moveCursor(1, 0);
-    else if(pad_held & PAD_LEFT)
+    }
+    else if(pad_pressed & PAD_LEFT)
+    {
         moveCursor(0, -1);
-    else if(pad_held & PAD_RIGHT)
+    }
+    else if(pad_pressed & PAD_RIGHT)
+    {
         moveCursor(0, 1);
+    }
 
+    /* CROSS = Select */
     if(pad_pressed & PAD_CROSS)
+    {
         activateKey();
-    else if(pad_pressed & PAD_TRIANGLE)
-        backspace();
-    else if(pad_pressed & PAD_CIRCLE)
-        keyboardClose(); // cancel, no callback
-    else if(pad_pressed & PAD_L1)
-        currentLayout = (currentLayout == KB_LAYOUT_LOWER) ? KB_LAYOUT_UPPER : KB_LAYOUT_LOWER;
-    else if(pad_pressed & PAD_R1)
-        currentLayout = (currentLayout == KB_LAYOUT_NUMBERS) ? KB_LAYOUT_SYMBOLS : KB_LAYOUT_NUMBERS;
+    }
 
-    return 1; // input was consumed, don't let normal menu navigation run
+    /* TRIANGLE = Backspace */
+    else if(pad_pressed & PAD_TRIANGLE)
+    {
+        backspace();
+    }
+
+    /* CIRCLE = Close */
+    else if(pad_pressed & PAD_CIRCLE)
+    {
+        keyboardClose();
+    }
+
+    /* L1 = CAPS / lowercase */
+    else if(pad_pressed & PAD_L1)
+    {
+        if(currentLayout == KB_LAYOUT_LOWER)
+        {
+            currentLayout = KB_LAYOUT_UPPER;
+        }
+        else if(currentLayout == KB_LAYOUT_UPPER)
+        {
+            currentLayout = KB_LAYOUT_LOWER;
+        }
+    }
+
+    /* R1 = Numbers / Symbols */
+    else if(pad_pressed & PAD_R1)
+    {
+        if(currentLayout == KB_LAYOUT_NUMBERS)
+        {
+            currentLayout = KB_LAYOUT_SYMBOLS;
+        }
+        else
+        {
+            currentLayout = KB_LAYOUT_NUMBERS;
+        }
+    }
+
+    /*
+     * Prevent compiler warning if pad_held isn't otherwise used.
+     */
+    (void)pad_held;
+
+    /*
+     * Consume keyboard input so normal menu navigation
+     * doesn't receive the same controller event.
+     */
+    return 1;
 }
+
+/* ============================================================
+ * DRAW KEYBOARD
+ * ============================================================ */
 
 void keyboardDraw()
 {
     if(!isOpen)
         return;
 
-    graphicsDrawKeyboard((const char *(*)[KB_COLS])layouts[currentLayout],
-                          KB_ROWS, KB_COLS, cursorRow, cursorCol);
+    graphicsDrawKeyboard(
+        (const char *(*)[KB_COLS])layouts[currentLayout],
+        KB_ROWS,
+        KB_COLS,
+        cursorRow,
+        cursorCol
+    );
+
     graphicsDrawSearchBox(buffer);
 }
