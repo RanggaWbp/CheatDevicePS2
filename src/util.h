@@ -74,4 +74,8 @@ const char *getNthString(const char *str, int n);
 
 unsigned long mycrc32(unsigned long inCrc32, const void *buf, long bufLen);
 
+// Case-insensitive substring search (PS2SDK's libc doesn't provide strcasestr).
+// Returns a pointer to the first match of needle in haystack, or NULL.
+const char *strcasestrPS2(const char *haystack, const char *needle);
+
 #endif
