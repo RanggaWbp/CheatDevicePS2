@@ -68,9 +68,9 @@ int main(int argc, char *argv[])
     }
 #endif
     
-    DPRINTF("[CKPT] before loadModules\n");
+    graphicsDebugCheckpoint("13 before loadModules");
     ret = loadModules(booting_from_hdd);
-    DPRINTF("[CKPT] after loadModules ret=%d\n", ret);
+    graphicsDebugCheckpoint(ret == 0 ? "14 loadModules OK" : "14 loadModules FAILED");
     if (ret != 0) displayError(error);
 #ifdef HDD
     if (ret == 0 && booting_from_hdd) {
@@ -84,34 +84,34 @@ int main(int argc, char *argv[])
         }
     }
 #endif
-    DPRINTF("[CKPT] before initSettings\n");
+    graphicsDebugCheckpoint("15 before initSettings");
     initSettings();
-    DPRINTF("[CKPT] before initMenus\n");
+    graphicsDebugCheckpoint("16 before initMenus");
     initMenus();
-    DPRINTF("[CKPT] after initMenus\n");
+    graphicsDebugCheckpoint("17 after initMenus");
     
     char *readOnlyPath = settingsGetReadOnlyDatabasePath();
-    DPRINTF("[CKPT] readOnlyPath=%s\n", readOnlyPath ? readOnlyPath : "(null)");
+    graphicsDebugCheckpoint(readOnlyPath ? "18 readOnlyPath set" : "18 readOnlyPath NULL");
     if(readOnlyPath && !cheatsOpenDatabase(readOnlyPath, 1))
     {
         sprintf(error, "Error loading read-only cheat database \"%s\"!", readOnlyPath);
         displayError(error);
     }
-    DPRINTF("[CKPT] after readOnly cheatsOpenDatabase\n");
+    graphicsDebugCheckpoint("19 after readOnly db");
 
     char *readWritePath = settingsGetReadWriteDatabasePath();
-    DPRINTF("[CKPT] readWritePath=%s\n", readWritePath ? readWritePath : "(null)");
+    graphicsDebugCheckpoint(readWritePath ? "20 readWritePath set" : "20 readWritePath NULL");
     if(readWritePath && !cheatsOpenDatabase(readWritePath, 0))
     {
         sprintf(error, "Error loading read/write cheat database \"%s\"!", readWritePath);
         displayError(error);
     }
-    DPRINTF("[CKPT] after readWrite cheatsOpenDatabase\n");
+    graphicsDebugCheckpoint("21 after readWrite db");
     
     cheatsLoadGameMenu();
-    DPRINTF("[CKPT] after cheatsLoadGameMenu\n");
+    graphicsDebugCheckpoint("22 after cheatsLoadGameMenu");
     cheatsLoadHistory();
-    DPRINTF("[CKPT] after cheatsLoadHistory, entering main loop\n");
+    graphicsDebugCheckpoint("23 after cheatsLoadHistory, entering main loop");
 
     /* Main Loop */
     while(1)
