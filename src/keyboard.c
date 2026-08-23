@@ -448,17 +448,32 @@ int keyboardHandlePad(
         activateKey();
     }
 
-    /* TRIANGLE = Backspace */
-    else if(pad_pressed & PAD_TRIANGLE)
-    {
-        backspace();
-    }
+    /* TRIANGLE = Backspace 1 karakter */
+else if(pad_pressed & PAD_TRIANGLE)
+{
+    backspace();
+}
 
-    /* CIRCLE = Close */
-    else if(pad_pressed & PAD_CIRCLE)
-    {
-        keyboardClose();
-    }
+/* SQUARE = Clear semua teks */
+else if(pad_pressed & PAD_SQUARE)
+{
+    buffer[0] = '\0';
+}
+
+/* R2 = OK / selesai */
+else if(pad_pressed & PAD_R2)
+{
+    if(doneCallback)
+        doneCallback(buffer);
+
+    keyboardClose();
+}
+
+/* CIRCLE = Close */
+else if(pad_pressed & PAD_CIRCLE)
+{
+    keyboardClose();
+}
 
     /* L1 = CAPS / lowercase */
     else if(pad_pressed & PAD_L1)
