@@ -1,6 +1,7 @@
 #include "dbgprintf.h"
 #include <stdio.h>
 #include <malloc.h>
+#include <string.h>
 
 #include "menus.h"
 #include "graphics.h"
@@ -10,6 +11,14 @@
 #include "startgame.h"
 #include "pad.h"
 #include "util.h"
+#include "keyboard.h"
+
+// Number of items currently navigable: the full list, or the filtered
+// subset when a search is active.
+static inline unsigned int effectiveCount()
+{
+    return activeMenu->searchActive ? activeMenu->numFiltered : activeMenu->numItems;
+}
 
 static menuState_t menues[NUMMENUS];
 static menuState_t *activeMenu = NULL;
@@ -160,6 +169,7 @@ int menuRemoveAllItems()
 
     activeMenu->currentItem = 0;
     activeMenu->numItems = 0;
+    menuClearSearch();
 
     return 1;
 }
@@ -368,9 +378,11 @@ int menuUp()
 
 int menuDown()
 {
-    if(activeMenu->numItems > 0)
+    unsigned int count = effectiveCount();
+
+    if(count > 0)
     {
-        if(activeMenu->currentItem < activeMenu->numItems - 1)
+        if(activeMenu->currentItem < count - 1)
         {
             activeMenu->currentItem++;
             return 1;
@@ -511,7 +523,13 @@ int menuProcessInputCallbacks(u32 padPressed)
     if(!activeMenu)
         return 0;
 
-    const menuItem_t *current = activeMenu->items[activeMenu->currentItem];
+    if(activeMenu->searchActive && activeMenu->numFiltered == 0)
+        return 0; // nothing matched the search query, nothing to act on
+
+    unsigned int realIdx = activeMenu->searchActive
+        ? activeMenu->filteredIndices[activeMenu->currentItem]
+        : activeMenu->currentItem;
+    const menuItem_t *current = activeMenu->items[realIdx];
 
     if((padPressed & PAD_SQUARE) &&
         activeMenu->callbacks[MENU_CALLBACK_PRESSED_SQUARE])
@@ -533,12 +551,14 @@ static float windowPosition;
 
 static void drawScrollBar()
 {
-    if(activeMenu->numItems < 15)
+    unsigned int count = effectiveCount();
+
+    if(count < 15)
         return;
 
     // Based on notes from http://csdgn.org/article/scrollbar
     // All menu items
-    float contentSize = activeMenu->numItems * 22;
+    float contentSize = count * 22;
     // Currently displayed menu items
     float windowSize = 14 * 22;
     // Size of track the grip moves over
@@ -557,9 +577,9 @@ static void drawScrollBar()
     float gripPositionOnTrack = trackScrollAreaSize * windowPositionRatio;
 
     // Draw track w/ 2px padding around grip
-    graphicsDrawQuad(graphicsGetDisplayWidth() - 40, 76, 10, trackSize + 4, COLOR_BLUE);
+    graphicsDrawQuad(graphicsGetDisplayWidth() - 40, 76, 10, trackSize + 4, COLOR_CARD_BG);
     // Draw grip
-    graphicsDrawQuad(graphicsGetDisplayWidth() - 38, 78 + gripPositionOnTrack, 6, gripSize, COLOR_WHITE);
+    graphicsDrawQuad(graphicsGetDisplayWidth() - 38, 78 + gripPositionOnTrack, 6, gripSize, COLOR_ACCENT);
 }
 
 typedef enum tickerState {
@@ -648,18 +668,76 @@ static void drawTitle()
         graphicsDrawTextCentered(47, COLOR_WHITE, activeMenu->text);
 }
 
+// Case-insensitive substring match, used by the search filter.
+static int textMatchesQuery(const char *text, const char *query)
+{
+    if(!text || !query || query[0] == '\0')
+        return 1; // empty query matches everything
+
+    return strcasestrPS2(text, query) != NULL;
+}
+
+// Rebuild activeMenu->filteredIndices from activeMenu->searchQuery.
+static void rebuildFilteredIndices()
+{
+    unsigned int i;
+    unsigned int count = 0;
+
+    if(!activeMenu->filteredIndices)
+        activeMenu->filteredIndices = malloc(sizeof(unsigned int) * activeMenu->numChunks * CHUNK_SIZE);
+
+    for(i = 0; i < activeMenu->numItems; i++)
+    {
+        if(textMatchesQuery(activeMenu->items[i]->text, activeMenu->searchQuery))
+            activeMenu->filteredIndices[count++] = i;
+    }
+
+    activeMenu->numFiltered = count;
+
+    if(activeMenu->currentItem >= count)
+        activeMenu->currentItem = (count > 0) ? count - 1 : 0;
+}
+
+void menuOpenSearch()
+{
+    keyboardOpen(activeMenu->searchQuery[0] ? activeMenu->searchQuery : NULL, menuApplySearch);
+}
+
+void menuApplySearch(const char *query)
+{
+    if(!query)
+        return; // user cancelled
+
+    strncpy(activeMenu->searchQuery, query, sizeof(activeMenu->searchQuery) - 1);
+    activeMenu->searchQuery[sizeof(activeMenu->searchQuery) - 1] = '\0';
+
+    activeMenu->searchActive = (activeMenu->searchQuery[0] != '\0');
+    activeMenu->currentItem = 0;
+
+    if(activeMenu->searchActive)
+        rebuildFilteredIndices();
+}
+
+void menuClearSearch()
+{
+    activeMenu->searchActive = 0;
+    activeMenu->searchQuery[0] = '\0';
+    activeMenu->currentItem = 0;
+}
+
 static void drawMenuItems()
 {
     int yItems = 14;
     int yAbove = 7;
     int y = 76;
     int idx;
+    unsigned int displayCount = effectiveCount();
 
     /* Find top of viewport */
-    if((activeMenu->numItems - activeMenu->currentItem) >= yAbove || (activeMenu->numItems < 8))
+    if((displayCount - activeMenu->currentItem) >= yAbove || (displayCount < 8))
         idx = activeMenu->currentItem;
     else
-        idx = activeMenu->numItems - yAbove;
+        idx = displayCount - yAbove;
 
     while(yAbove-- > 0 && idx > 0)
         idx--;
@@ -670,9 +748,14 @@ static void drawMenuItems()
     int i;
     for(i = 0; i < yItems; ++i)
     {
-        if(idx < activeMenu->numItems)
+        if(idx < displayCount)
         {
-            menuItem_t *item = activeMenu->items[idx];
+            unsigned int realIdx = activeMenu->searchActive ? activeMenu->filteredIndices[idx] : idx;
+            menuItem_t *item = activeMenu->items[realIdx];
+            int isActiveRow = (idx == activeMenu->currentItem);
+
+            if(isActiveRow)
+                graphicsDrawQuad(24, y - 15, graphicsGetDisplayWidth() - 84, 20, COLOR_CARD_BG_ACTIVE);
 
             if(item->type == MENU_ITEM_NORMAL || item->type == MENU_ITEM_HAMBURGER_BUTTON)
             {
@@ -710,7 +793,7 @@ static void drawMenuItems()
             }
 
             if(idx == activeMenu->currentItem)
-                graphicsDrawPointer(28, y+5);
+                graphicsDrawQuad(24, y - 15, 3, 20, COLOR_ACCENT);
 
             y += 22;
             idx++;
@@ -733,9 +816,16 @@ int menuRender()
     drawHelpTicker();
     drawScrollBar();
 
-    if(activeMenu->callbacks[MENU_CALLBACK_AFTER_DRAW])
+    if(keyboardIsOpen())
+        keyboardDraw();
+
+    if(activeMenu->callbacks[MENU_CALLBACK_AFTER_DRAW] &&
+       !(activeMenu->searchActive && activeMenu->numFiltered == 0))
     {
-        const menuItem_t *current = activeMenu->items[activeMenu->currentItem];
+        unsigned int realIdx = activeMenu->searchActive
+            ? activeMenu->filteredIndices[activeMenu->currentItem]
+            : activeMenu->currentItem;
+        const menuItem_t *current = activeMenu->items[realIdx];
         activeMenu->callbacks[MENU_CALLBACK_AFTER_DRAW](current);
     }
 
