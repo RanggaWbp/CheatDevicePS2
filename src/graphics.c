@@ -1324,66 +1324,6 @@ void graphicsDrawKeyboard(
     #undef KB_Y
     #undef KB_INSET
 }
-{
-    int w = graphicsGetDisplayWidth();
-    int startX = 30;
-    int startY = 100;
-    int keyW = (w - 60) / cols;
-    int keyH = 48;
-    int row, col;
-
-    // Dim backdrop so the keyboard reads as an overlay.
-    graphicsDrawQuad(0, 0, w, graphicsGetDisplayHeight(), COLOR_BLACK);
-
-    for(row = 0; row < rows; row++)
-    {
-        for(col = 0; col < cols; col++)
-        {
-            const char *label = layout[row][col];
-
-            if(!label || label[0] == '\0')
-                continue;
-
-            int x = startX + col * keyW;
-            int y = startY + row * keyH;
-            int isSelected = (row == cursorRow && col == cursorCol);
-            graphicsColor_t keyBg = isSelected ? COLOR_ACCENT : COLOR_CARD_BG;
-            float textWidth;
-            float textX;
-            // Baseline sits a little below the box's vertical center so
-            // the glyph (which draws upward from its baseline) looks
-            // centered inside the box without touching the bottom edge.
-            float textY = y + (keyH * 0.62f);
-
-            // Give every key a visible fill (not black-on-black) so the
-            // whole keyboard reads clearly against the dim backdrop.
-            graphicsDrawQuad(x + 3, y + 3, keyW - 6, keyH - 6, keyBg);
-
-            // The space bar spans columns 1-8 (8 cells); only print its
-            // label once, truly centered over that whole span.
-            if(strcmp(label, "SPACE") == 0)
-            {
-                if(col == 4)
-                {
-                    float spanCenterX = startX + keyW * 5.0f; // center of cols 1-8
-                    textWidth = graphicsGetWidth("SPACE");
-                    textX = spanCenterX - (textWidth / 2.0f);
-                    graphicsDrawText(textX, textY, COLOR_WHITE, "SPACE");
-                }
-            }
-            else
-            {
-                textWidth = graphicsGetWidth(label);
-                textX = x + (keyW / 2.0f) - (textWidth / 2.0f);
-                graphicsDrawText(textX, textY, COLOR_WHITE, "%s", label);
-            }
-        }
-    }
-
-    graphicsDrawText(startX, startY + rows * keyH + 24, COLOR_MUTED,
-        "{L1} Shift   {R1} 123/Symbols   {CROSS} Select   {TRIANGLE} Backspace   {CIRCLE} Close");
-}
-
 void graphicsDebugCheckpoint(const char *label)
 {
     // Deliberately bypasses menuRender()/graphicsRender()'s double-buffer
