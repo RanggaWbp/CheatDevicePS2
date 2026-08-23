@@ -7,6 +7,7 @@
 #include "saves.h"
 #include "cheats.h"
 #include "settings.h"
+#include "keyboard.h"
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -273,6 +274,32 @@ int loadModules(int booting_from_hdd)
     return 0;
 }
 
+const char *strcasestrPS2(const char *haystack, const char *needle)
+{
+    if(!haystack || !needle)
+        return NULL;
+
+    if(*needle == '\0')
+        return haystack;
+
+    for(; *haystack; haystack++)
+    {
+        const char *h = haystack;
+        const char *n = needle;
+
+        while(*h && *n && tolower((unsigned char)*h) == tolower((unsigned char)*n))
+        {
+            h++;
+            n++;
+        }
+
+        if(*n == '\0')
+            return haystack;
+    }
+
+    return NULL;
+}
+
 void handlePad()
 {
     static int selected = 0;
@@ -281,6 +308,10 @@ void handlePad()
     padPoll(DELAYTIME_FAST);
     u32 pad_pressed = padPressed();
     u32 pad_rapid = padHeld();
+
+    // If the virtual keyboard is open, it owns all input until closed.
+    if(keyboardHandlePad(pad_pressed, pad_rapid))
+        return;
 
     // Route input to active menu's callbacks first.
     if(menuProcessInputCallbacks(pad_pressed))
@@ -312,7 +343,10 @@ void handlePad()
             menuDownAlpha();
         else if(pad_rapid & PAD_L2)
             menuUpAlpha();
-        
+
+        if(pad_pressed & PAD_TRIANGLE)
+            menuOpenSearch();
+
         if(pad_pressed & PAD_CIRCLE || pad_pressed & PAD_START)
         {
             menuSetActive(MENU_MAIN);
