@@ -233,8 +233,18 @@ int initGraphics()
 static void graphicsLoadPNG(GSTEXTURE *tex, u8 *data, int len, int linear_filtering)
 {
     upng_t* pngTexture = upng_new_from_bytes(data, len);
-    upng_header(pngTexture);
-    upng_decode(pngTexture);
+    if(upng_header(pngTexture) != UPNG_EOK || upng_decode(pngTexture) != UPNG_EOK)
+    {
+        // Unsupported/corrupt PNG (e.g. indexed/palette color type, which
+        // this upng build cannot decode). Fail loud instead of leaving
+        // tex->PSM uninitialized and hanging on a garbage-sized
+        // memalign()/memcpy() below.
+        DPRINTF("graphicsLoadPNG: failed to decode PNG (upng error %d)\n", upng_get_error(pngTexture));
+        upng_free(pngTexture);
+        tex->Mem = NULL;
+        tex->Vram = 0;
+        return;
+    }
 
     tex->VramClut = 0;
     tex->Clut = NULL;
@@ -267,6 +277,16 @@ static void graphicsLoadPNG(GSTEXTURE *tex, u8 *data, int len, int linear_filter
 
             imageBuffer[i * 4 + 3] = alpha;
         }
+    }
+    else
+    {
+        // Unsupported color format (e.g. indexed/palette, luminance, 16-bit).
+        // Bail instead of using an uninitialized tex->PSM.
+        DPRINTF("graphicsLoadPNG: unsupported PNG format %d\n", upng_get_format(pngTexture));
+        upng_free(pngTexture);
+        tex->Mem = NULL;
+        tex->Vram = 0;
+        return;
     }
 
     tex->Mem = memalign(128, gsKit_texture_size_ee(tex->Width, tex->Height, tex->PSM));
