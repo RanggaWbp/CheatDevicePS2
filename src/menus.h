@@ -32,7 +32,8 @@ typedef enum {
     // Executed after user presses square on the pad
     MENU_CALLBACK_PRESSED_SQUARE,
     // Executed after user presses cross on the pad
-    MENU_CALLBACK_PRESSED_CROSS
+    MENU_CALLBACK_PRESSED_CROSS,
+    MENU_CALLBACK_COUNT // sentinel: number of callback types, keep last
 } menuCallbackType_t;
 
 typedef struct menuItem {
@@ -48,7 +49,7 @@ typedef struct menuState {
     const char *text;
     void *extra; // Optional: Associate additional data with the menu.
 
-    void (*callbacks[sizeof(menuCallbackType_t)])(const menuItem_t *selected);
+    void (*callbacks[MENU_CALLBACK_COUNT])(const menuItem_t *selected);
 
     const char *helpTickerText;
     int helpTickerLength;
