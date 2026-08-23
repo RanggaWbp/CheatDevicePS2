@@ -1059,27 +1059,26 @@ static int readTextCheats(char *text, size_t len)
     u32 lineNum = 0;
 
     clock_t start = clock();
-
+    
     while(text < endPtr)
     {
         char *end = strchr(text, '\n');
         if(!end) // Reading the last line
             end = endPtr - 1;
-
+        
         int lineLen = end - text;
         if(lineLen)
         {
             // Remove trailing whitespace
             char *trimEnd;
-            char *lineStart = text; // batas bawah agar tidak menulis sebelum awal baris
+            char *lineStart = text; // lower bound so we never write before this line's start
             for(trimEnd = text + lineLen;
                 trimEnd >= lineStart &&
                 ((*trimEnd == ' ') || (*trimEnd == '\r') || (*trimEnd == '\n') || (*trimEnd == '\t'));
                 --trimEnd)
                 *trimEnd = '\0';
 
-            // Baris hanya berisi whitespace -> tidak ada konten untuk diparse,
-            // lewati tanpa memanggil parseLine() pada string kosong/corrupt.
+            // Line was whitespace-only: nothing to parse, skip it safely.
             if(trimEnd < lineStart)
             {
                 text += lineLen + 1;
@@ -1096,16 +1095,11 @@ static int readTextCheats(char *text, size_t len)
 
             parseLine(text, trimEnd - text + 1);
         }
-
+        
         text += lineLen + 1;
         lineNum++;
     }
 
-    clock_t end = clock();
-    DPRINTF("Loading took %f seconds\n", ((float)end - start) / CLOCKS_PER_SEC);
-
-    return 1;
-}
     clock_t end = clock();
     DPRINTF("Loading took %f seconds\n", ((float)end - start) / CLOCKS_PER_SEC);
 
