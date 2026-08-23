@@ -921,21 +921,22 @@ void graphicsDrawKeyboard(const char *(*layout)[10], int rows, int cols, int cur
             float textX;
             // Baseline sits a little below the box's vertical center so
             // the glyph (which draws upward from its baseline) looks
-            // centered inside the box rather than clinging to the top.
-            float textY = y + (keyH * 0.68f);
+            // centered inside the box without touching the bottom edge.
+            float textY = y + (keyH * 0.62f);
 
             // Give every key a visible fill (not black-on-black) so the
             // whole keyboard reads clearly against the dim backdrop.
-            graphicsDrawQuad(x + 2, y + 2, keyW - 4, keyH - 4, keyBg);
+            graphicsDrawQuad(x + 3, y + 3, keyW - 6, keyH - 6, keyBg);
 
-            // The space bar spans several adjacent cells; only print its
-            // label once, centered on the middle cell of the run.
+            // The space bar spans columns 1-8 (8 cells); only print its
+            // label once, truly centered over that whole span.
             if(strcmp(label, "SPACE") == 0)
             {
                 if(col == 4)
                 {
+                    float spanCenterX = startX + keyW * 5.0f; // center of cols 1-8
                     textWidth = graphicsGetWidth("SPACE");
-                    textX = x + (keyW * 4) / 2.0f - (textWidth / 2.0f);
+                    textX = spanCenterX - (textWidth / 2.0f);
                     graphicsDrawText(textX, textY, COLOR_WHITE, "SPACE");
                 }
             }
