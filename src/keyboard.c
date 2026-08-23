@@ -7,35 +7,35 @@
 
 // Each layout is a grid of rows/cols. Regular keys hold their own label
 // (e.g. "a", "5"). Special keys use fixed labels handled in activateKey():
-// "BKSP"=backspace, "SPACE"=space, "OK"=confirm, "CAPS"/"caps"=shift,
+// "DEL"=backspace, "SPACE"=space, "OK"=confirm, "CAPS"/"caps"=shift,
 // "123"=numbers layout, "SYM"=symbols layout, "ABC"=back to lowercase.
 #define KB_COLS 10
 #define KB_ROWS 4
 
 static const char *layoutLower[KB_ROWS][KB_COLS] = {
     {"q","w","e","r","t","y","u","i","o","p"},
-    {"a","s","d","f","g","h","j","k","l","BKSP"},
+    {"a","s","d","f","g","h","j","k","l","DEL"},
     {"z","x","c","v","b","n","m",",",".","123"},
     {"CAPS","SPACE","SPACE","SPACE","SPACE","SPACE","SPACE","SPACE","SPACE","OK"}
 };
 
 static const char *layoutUpper[KB_ROWS][KB_COLS] = {
     {"Q","W","E","R","T","Y","U","I","O","P"},
-    {"A","S","D","F","G","H","J","K","L","BKSP"},
+    {"A","S","D","F","G","H","J","K","L","DEL"},
     {"Z","X","C","V","B","N","M",",",".","123"},
     {"caps","SPACE","SPACE","SPACE","SPACE","SPACE","SPACE","SPACE","SPACE","OK"}
 };
 
 static const char *layoutNumbers[KB_ROWS][KB_COLS] = {
     {"1","2","3","4","5","6","7","8","9","0"},
-    {"-","/",":",";","(",")","$","&","@","BKSP"},
+    {"-","/",":",";","(",")","$","&","@","DEL"},
     {"#","%","+","=","*","\"","'",".",",","SYM"},
     {"ABC","SPACE","SPACE","SPACE","SPACE","SPACE","SPACE","SPACE","SPACE","OK"}
 };
 
 static const char *layoutSymbols[KB_ROWS][KB_COLS] = {
     {"[","]","{","}","#","%","^","*","+","="},
-    {"_","\\","|","~","<",">","!","?","'","BKSP"},
+    {"_","\\","|","~","<",">","!","?","'","DEL"},
     {"-","/",":",";","(",")","$","&","@","123"},
     {"ABC","SPACE","SPACE","SPACE","SPACE","SPACE","SPACE","SPACE","SPACE","OK"}
 };
@@ -107,7 +107,7 @@ static void activateKey()
     if(!key || key[0] == '\0')
         return;
 
-    if(strcmp(key, "BKSP") == 0)
+    if(strcmp(key, "DEL") == 0)
         backspace();
     else if(strcmp(key, "SPACE") == 0)
         appendChar(" ");
