@@ -206,15 +206,6 @@ int initGraphics()
         return 0;
 }
 
-// Boot-stage marker used by main.c to trace how far startup got before a
-// freeze/crash. Deliberately does nothing but log: several call sites in
-// main.c happen before initMenus()/initSettings(), so this must not touch
-// menu state or issue a GS render.
-void graphicsDebugCheckpoint(const char *label)
-{
-    DPRINTF("[checkpoint] %s\n", label);
-}
-
 static void graphicsLoadPNG(GSTEXTURE *tex, u8 *data, int len, int linear_filtering)
 {
     upng_t* pngTexture = upng_new_from_bytes(data, len);
@@ -904,10 +895,10 @@ void graphicsDrawSearchBox(const char *text)
 void graphicsDrawKeyboard(const char *(*layout)[10], int rows, int cols, int cursorRow, int cursorCol)
 {
     int w = graphicsGetDisplayWidth();
-    int startX = 40;
-    int startY = 100;
-    int keyW = (w - 80) / cols;
-    int keyH = 28;
+    int startX = 30;
+    int startY = 110;
+    int keyW = (w - 60) / cols;
+    int keyH = 36;
     int row, col;
 
     // Dim backdrop so the keyboard reads as an overlay.
@@ -925,31 +916,36 @@ void graphicsDrawKeyboard(const char *(*layout)[10], int rows, int cols, int cur
             int x = startX + col * keyW;
             int y = startY + row * keyH;
             int isSelected = (row == cursorRow && col == cursorCol);
+            graphicsColor_t keyBg = isSelected ? COLOR_ACCENT : COLOR_CARD_BG;
+            float textWidth;
+            float textX;
 
-            graphicsDrawQuad(x + 2, y, keyW - 4, keyH - 4, isSelected ? COLOR_BLUE : COLOR_BLACK);
+            // Give every key a visible fill (not black-on-black) so the
+            // whole keyboard reads clearly against the dim backdrop.
+            graphicsDrawQuad(x + 2, y, keyW - 4, keyH - 4, keyBg);
 
             // The space bar spans several adjacent cells; only print its
             // label once, centered on the middle cell of the run.
             if(strcmp(label, "SPACE") == 0)
             {
                 if(col == 4)
-                    graphicsDrawText(x + keyW / 2 - graphicsGetWidth("SPACE") / 2, y + 18, COLOR_WHITE, "SPACE");
+                {
+                    textWidth = graphicsGetWidth("SPACE");
+                    textX = x + (keyW * 4) / 2.0f - (textWidth / 2.0f);
+                    graphicsDrawText(textX, y + 24, COLOR_WHITE, "SPACE");
+                }
             }
             else
             {
-                // Center using the label's actual width instead of a fixed
-                // offset, so multi-character keys (BKSP, CAPS, 123, OK...)
-                // don't bleed into the next cell.
-                graphicsDrawText(x + keyW / 2 - graphicsGetWidth(label) / 2, y + 18, COLOR_WHITE, "%s", label);
+                textWidth = graphicsGetWidth(label);
+                textX = x + (keyW / 2.0f) - (textWidth / 2.0f);
+                graphicsDrawText(textX, y + 24, COLOR_WHITE, "%s", label);
             }
         }
     }
 
-    int hintY = startY + rows * keyH + 20;
-    graphicsDrawText(startX, hintY, COLOR_WHITE,
-        "D-Pad Navigate   {CROSS} Select   {CIRCLE} Close");
-    graphicsDrawText(startX, hintY + 20, COLOR_WHITE,
-        "{L1} Shift   {R1} 123/Symbols   {TRIANGLE} Backspace");
+    graphicsDrawText(startX, startY + rows * keyH + 24, COLOR_MUTED,
+        "{L1} Shift   {R1} 123/Symbols   {CROSS} Select   {TRIANGLE} Backspace   {CIRCLE} Close");
 }
 
 void graphicsRender()
