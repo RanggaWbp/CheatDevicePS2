@@ -1,7 +1,7 @@
 #
 # Cheat Device for PlayStation 2
 # by root670
-#
+# Reesign by RanggaWbp
 
 DTL_T10000 ?= 0
 EXFAT ?= 0
