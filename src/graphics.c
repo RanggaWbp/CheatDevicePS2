@@ -948,6 +948,20 @@ void graphicsDrawKeyboard(const char *(*layout)[10], int rows, int cols, int cur
         "{L1} Shift   {R1} 123/Symbols   {CROSS} Select   {TRIANGLE} Backspace   {CIRCLE} Close");
 }
 
+void graphicsDebugCheckpoint(const char *label)
+{
+    // Deliberately bypasses menuRender()/graphicsRender()'s double-buffer
+    // queueing: this must work even before initMenus() has run (activeMenu
+    // is still NULL at the earliest checkpoints), and it must show up on
+    // screen immediately, even if the program hangs right after this call.
+    gsKit_clear(gsGlobal, GS_SETREG_RGBAQ(0x00, 0x00, 0x00, 0x80, 0x00));
+    graphicsDrawText(20, 20, COLOR_WHITE, "%s", label);
+    gsKit_set_finish(gsGlobal);
+    gsKit_queue_exec(gsGlobal);
+    gsKit_finish();
+    gsKit_sync_flip(gsGlobal);
+}
+
 void graphicsRender()
 {
     gsKit_set_finish(gsGlobal);
