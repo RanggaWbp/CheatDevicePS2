@@ -24,12 +24,13 @@ typedef enum {
     COLOR_MUTED        // Muted gray text for inactive labels
 } graphicsColor_t;
 
-int initGraphics();
-
-// Logs a labelled boot-stage marker (see main.c). Safe to call before
-// initMenus()/initSettings() since it never touches menu or GS state -
-// it only writes to the debug log (DPRINTF).
+// Draw a full-screen black clear + label text and display it immediately
+// (no double-buffer queueing, no dependency on menus being initialized).
+// Used to bisect where boot hangs when the screen goes blank on real
+// hardware but not in an emulator.
 void graphicsDebugCheckpoint(const char *label);
+
+int initGraphics();
 
 // Draw text at (x,y) with a color
 void graphicsDrawText(float x, float y, graphicsColor_t color, const char *format, ...);
