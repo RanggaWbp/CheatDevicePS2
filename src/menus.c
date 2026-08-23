@@ -755,15 +755,20 @@ static void drawMenuItems()
             int isActiveRow = (idx == activeMenu->currentItem);
 
             if(isActiveRow)
-                graphicsDrawQuad(24, y - 15, graphicsGetDisplayWidth() - 84, 20, COLOR_CARD_BG_ACTIVE);
+                graphicsDrawQuad(24, y - 15, graphicsGetDisplayWidth() - 84, 22, COLOR_CARD_BG_ACTIVE);
+
+            // Never let a row render as an empty highlighted gap: fall back
+            // to a visible placeholder so a bad item is obvious instead of
+            // silently invisible.
+            const char *label = (item && item->text && item->text[0] != '\0') ? item->text : "(untitled)";
 
             if(item->type == MENU_ITEM_NORMAL || item->type == MENU_ITEM_HAMBURGER_BUTTON)
             {
                 cheatsCheat_t *cheat = item ? (cheatsCheat_t *)item->extra : NULL;
                 if(activeMenu->identifier == MENU_CHEATS &&
-                   cheat->enabled)
+                   cheat && cheat->enabled)
                 {
-                    graphicsDrawText(50, y, COLOR_YELLOW, item->text);
+                    graphicsDrawText(50, y, COLOR_YELLOW, label);
 
                     if(cheat->type == CHEAT_VALUE_MAPPED)
                     {
@@ -777,14 +782,14 @@ static void drawMenuItems()
                         cheatsIsActiveGame((cheatsGame_t *) item->extra) &&
                         cheatsGetNumEnabledCheats() > 0)
                 {
-                    graphicsDrawText(50, y, COLOR_YELLOW, item->text);
+                    graphicsDrawText(50, y, COLOR_YELLOW, label);
                 }
                 else
-                    graphicsDrawText(50, y, COLOR_WHITE, item->text);
+                    graphicsDrawText(50, y, COLOR_WHITE, label);
             }
             else
             {
-                graphicsDrawText(50, y, COLOR_GREEN, item->text);
+                graphicsDrawText(50, y, COLOR_GREEN, label);
             }
 
             if(item->type == MENU_ITEM_HAMBURGER_BUTTON)
