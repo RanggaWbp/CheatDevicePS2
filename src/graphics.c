@@ -206,6 +206,15 @@ int initGraphics()
         return 0;
 }
 
+// Boot-stage marker used by main.c to trace how far startup got before a
+// freeze/crash. Deliberately does nothing but log: several call sites in
+// main.c happen before initMenus()/initSettings(), so this must not touch
+// menu state or issue a GS render.
+void graphicsDebugCheckpoint(const char *label)
+{
+    DPRINTF("[checkpoint] %s\n", label);
+}
+
 static void graphicsLoadPNG(GSTEXTURE *tex, u8 *data, int len, int linear_filtering)
 {
     upng_t* pngTexture = upng_new_from_bytes(data, len);
