@@ -119,18 +119,6 @@ static int vsync_callback()
     return 0;
 }
 
-// Debug-only helper: paints a black bar + label on screen and flips the
-// buffer immediately. If the program hangs right after this call, the
-// label stays on screen forever, telling us the last checkpoint reached.
-// No delay/sleep added: we don't need one, because the checkpoint we
-// care about is whichever one is still frozen on screen.
-void graphicsDebugCheckpoint(const char *label)
-{
-    graphicsDrawQuad(0, 0, graphicsGetDisplayWidth(), 40, COLOR_BLACK);
-    graphicsDrawText(20, 20, COLOR_YELLOW, "CKPT: %s", label);
-    graphicsRender();
-}
-
 int initGraphics()
 {
     if(!initialized)
@@ -190,39 +178,27 @@ int initGraphics()
         graphicsDrawBackground();
         graphicsDrawText(450, 400, COLOR_WHITE, "Please wait...");
         graphicsRender();
-        graphicsDebugCheckpoint("01 bg loaded");
 
         graphicsLoadPNG(&check, _check_png_start, _check_png_size, 0);
-        graphicsDebugCheckpoint("02 check loaded");
         graphicsLoadPNG(&gamepad, _gamepad_png_start, _gamepad_png_size, 1);
-        graphicsDebugCheckpoint("03 gamepad loaded");
         graphicsLoadPNG(&cube, _cube_png_start, _cube_png_size, 1);
-        graphicsDebugCheckpoint("04 cube loaded");
         graphicsLoadPNG(&hamburgerIcon, _hamburgerIcon_png_start, _hamburgerIcon_png_size, 0);
-        graphicsDebugCheckpoint("05 hamburger loaded");
         graphicsLoadPNG(&savemanager, _savemanager_png_start, _savemanager_png_size, 1);
-        graphicsDebugCheckpoint("06 savemanager loaded");
         graphicsLoadPNG(&flashdrive, _flashdrive_png_start, _flashdrive_png_size, 1);
-        graphicsDebugCheckpoint("07 flashdrive loaded");
         graphicsLoadPNG(&memorycard1, _memorycard1_png_start, _memorycard1_png_size, 1);
-        graphicsDebugCheckpoint("08 memcard1 loaded");
         graphicsLoadPNG(&memorycard2, _memorycard2_png_start, _memorycard2_png_size, 1);
-        graphicsDebugCheckpoint("09 memcard2 loaded");
         graphicsLoadPNG(&buttonCross, _buttonCross_png_start, _buttonCross_png_size, 0);
         graphicsLoadPNG(&buttonCircle, _buttonCircle_png_start, _buttonCircle_png_size, 0);
         graphicsLoadPNG(&buttonTriangle, _buttonTriangle_png_start, _buttonTriangle_png_size, 0);
         graphicsLoadPNG(&buttonSquare, _buttonSquare_png_start, _buttonSquare_png_size, 0);
-        graphicsDebugCheckpoint("10 buttons 1-4 loaded");
         graphicsLoadPNG(&buttonStart, _buttonStart_png_start, _buttonStart_png_size, 0);
         graphicsLoadPNG(&buttonSelect, _buttonSelect_png_start, _buttonSelect_png_size, 0);
         graphicsLoadPNG(&buttonL1, _buttonL1_png_start, _buttonL1_png_size, 0);
         graphicsLoadPNG(&buttonL2, _buttonL2_png_start, _buttonL2_png_size, 0);
-        graphicsDebugCheckpoint("11 buttons 5-8 loaded");
         graphicsLoadPNG(&buttonL3, _buttonL3_png_start, _buttonL3_png_size, 0);
         graphicsLoadPNG(&buttonR1, _buttonR1_png_start, _buttonR1_png_size, 0);
         graphicsLoadPNG(&buttonR2, _buttonR2_png_start, _buttonR2_png_size, 0);
         graphicsLoadPNG(&buttonR3, _buttonR3_png_start, _buttonR3_png_size, 0);
-        graphicsDebugCheckpoint("12 all textures loaded, returning");
 
         return 1;
     }
@@ -233,18 +209,8 @@ int initGraphics()
 static void graphicsLoadPNG(GSTEXTURE *tex, u8 *data, int len, int linear_filtering)
 {
     upng_t* pngTexture = upng_new_from_bytes(data, len);
-    if(upng_header(pngTexture) != UPNG_EOK || upng_decode(pngTexture) != UPNG_EOK)
-    {
-        // Unsupported/corrupt PNG (e.g. indexed/palette color type, which
-        // this upng build cannot decode). Fail loud instead of leaving
-        // tex->PSM uninitialized and hanging on a garbage-sized
-        // memalign()/memcpy() below.
-        DPRINTF("graphicsLoadPNG: failed to decode PNG (upng error %d)\n", upng_get_error(pngTexture));
-        upng_free(pngTexture);
-        tex->Mem = NULL;
-        tex->Vram = 0;
-        return;
-    }
+    upng_header(pngTexture);
+    upng_decode(pngTexture);
 
     tex->VramClut = 0;
     tex->Clut = NULL;
@@ -278,29 +244,13 @@ static void graphicsLoadPNG(GSTEXTURE *tex, u8 *data, int len, int linear_filter
             imageBuffer[i * 4 + 3] = alpha;
         }
     }
-    else
-    {
-        // Unsupported color format (e.g. indexed/palette, luminance, 16-bit).
-        // Bail instead of using an uninitialized tex->PSM.
-        DPRINTF("graphicsLoadPNG: unsupported PNG format %d\n", upng_get_format(pngTexture));
-        upng_free(pngTexture);
-        tex->Mem = NULL;
-        tex->Vram = 0;
-        return;
-    }
 
     tex->Mem = memalign(128, gsKit_texture_size_ee(tex->Width, tex->Height, tex->PSM));
     memcpy(tex->Mem, imageBuffer, gsKit_texture_size_ee(tex->Width, tex->Height, tex->PSM));
     tex->Vram = gsKit_vram_alloc(gsGlobal, gsKit_texture_size(tex->Width, tex->Height, tex->PSM), GSKIT_ALLOC_USERBUFFER);
     tex->Filter = (linear_filtering) ? GS_FILTER_LINEAR : GS_FILTER_NEAREST;
     gsKit_texture_upload(gsGlobal, tex);
-
-    // The texture now lives in VRAM (tex->Vram). The main-RAM staging copy
-    // is only needed during upload, so free it to avoid leaking main RAM
-    // for every texture we load (PS2 only has 32MB total).
-    free(tex->Mem);
-    tex->Mem = NULL;
-
+    
     upng_free(pngTexture);
 }
 
@@ -974,17 +924,23 @@ void graphicsDrawKeyboard(const char *(*layout)[10], int rows, int cols, int cur
             if(strcmp(label, "SPACE") == 0)
             {
                 if(col == 4)
-                    graphicsDrawText(x + keyW / 2 - 20, y + 18, COLOR_WHITE, "SPACE");
+                    graphicsDrawText(x + keyW / 2 - graphicsGetWidth("SPACE") / 2, y + 18, COLOR_WHITE, "SPACE");
             }
             else
             {
-                graphicsDrawText(x + keyW / 2 - 4, y + 18, COLOR_WHITE, "%s", label);
+                // Center using the label's actual width instead of a fixed
+                // offset, so multi-character keys (BKSP, CAPS, 123, OK...)
+                // don't bleed into the next cell.
+                graphicsDrawText(x + keyW / 2 - graphicsGetWidth(label) / 2, y + 18, COLOR_WHITE, "%s", label);
             }
         }
     }
 
-    graphicsDrawText(startX, startY + rows * keyH + 20, COLOR_WHITE,
-        "L1: shift   R1: numbers/symbols   X: select   Triangle: backspace   O: cancel");
+    int hintY = startY + rows * keyH + 20;
+    graphicsDrawText(startX, hintY, COLOR_WHITE,
+        "D-Pad Navigate   {CROSS} Select   {CIRCLE} Close");
+    graphicsDrawText(startX, hintY + 20, COLOR_WHITE,
+        "{L1} Shift   {R1} 123/Symbols   {TRIANGLE} Backspace");
 }
 
 void graphicsRender()
