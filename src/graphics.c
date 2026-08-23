@@ -648,7 +648,7 @@ static void drawPromptBox(float width, float height, u64 color)
 
 void graphicsDrawPromptBox(float width, float height)
 {
-    drawPromptBox(width, height, graphicsColorTable[COLOR_CARD_BG_ACTIVE]);
+    drawPromptBox(width, height, GS_SETREG_RGBAQ(0x22, 0x22, 0xEE, 0x60, 0x80));
 }
 
 void graphicsDrawPromptBoxBlack(float width, float height)
@@ -659,68 +659,28 @@ void graphicsDrawPromptBoxBlack(float width, float height)
 static void drawMenu(const menuIcon_t icons[], int numIcons, int activeItem)
 {
     int i;
-    const int cardW = 130;
-    const int cardH = 110;
-    const int gap = 16;
-    const int borderThickness = 2;
-    const float totalWidth = (cardW * numIcons) + (gap * (numIcons - 1));
-    const float startX = (gsGlobal->Width / 2.0f) - (totalWidth / 2.0f);
-    const float cardY = 150.0f;
-
+    const u64 unselected = GS_SETREG_RGBAQ(0x50, 0x50, 0x50, 0x20, 0x80);
+    const u64 selected = GS_SETREG_RGBAQ(0x50, 0x50, 0x50, 0x80, 0x80);
+    
+    graphicsDrawPromptBox(350, 150);
+    
     for(i = 0; i < numIcons; i++)
     {
-        float cardX = startX + i * (cardW + gap);
-        int isActive = (activeItem == i);
-        GSTEXTURE *tex = icons[i].tex;
-        float iconX;
-        float iconY;
-        float textWidth;
-        float textX;
-
-        // Explicitly disable texturing before drawing solid-color quads.
-        // Leaving texture state from a previous draw call active is
-        // tolerated by emulators but can hang real hardware.
+        float x = (gsGlobal->Width / 2.0f) - ((75.0f * numIcons) / 2.0f) + (75.0f * i);
         gsKit_set_primalpha(gsGlobal, GS_SETREG_ALPHA(0,1,0,1,0), 0);
-
-        if(isActive)
-        {
-            // Accent border: draw a slightly larger accent-colored quad behind
-            // the card fill, leaving a visible border ring around the edges.
-            graphicsDrawQuad(cardX - borderThickness, cardY - borderThickness,
-                              cardW + borderThickness * 2, cardH + borderThickness * 2,
-                              COLOR_ACCENT);
-            graphicsDrawQuad(cardX, cardY, cardW, cardH, COLOR_CARD_BG_ACTIVE);
-        }
-        else
-        {
-            graphicsDrawQuad(cardX, cardY, cardW, cardH, COLOR_CARD_BG);
-        }
-
-        gsKit_set_primalpha(gsGlobal, GS_BLEND_BACK2FRONT, 0);
-
-        // Center the icon texture within the card, above the label.
-        iconX = cardX + (cardW / 2.0f) - (tex->Width / 2.0f);
-        iconY = cardY + 18.0f;
-
-        gsKit_set_primalpha(gsGlobal, GS_SETREG_ALPHA(0,1,0,1,0), 0);
-        gsKit_prim_sprite_texture(gsGlobal, tex,
-                                            iconX,
-                                            iconY,
+        gsKit_prim_sprite_texture(gsGlobal, icons[i].tex,
+                                            x,
+                                            192,
                                             0,
                                             0,
-                                            iconX + tex->Width,
-                                            iconY + tex->Height,
-                                            tex->Width,
-                                            tex->Height,
+                                            x + (icons[i].tex)->Width,
+                                            192 + (icons[i].tex)->Height,
+                                            (icons[i].tex)->Width,
+                                            (icons[i].tex)->Height,
                                             1,
-                                            0x80808080);
+                                            (activeItem == i) ? selected : unselected);
+        if (activeItem == i) graphicsDrawTextCentered(265, COLOR_WHITE, icons[i].label);
         gsKit_set_primalpha(gsGlobal, GS_BLEND_BACK2FRONT, 0);
-
-        textWidth = graphicsGetWidth(icons[i].label);
-        textX = cardX + (cardW / 2.0f) - (textWidth / 2.0f);
-        graphicsDrawText(textX, cardY + cardH - 20,
-                          isActive ? COLOR_WHITE : COLOR_MUTED,
-                          "%s", icons[i].label);
     }
 }
 
