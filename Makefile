@@ -20,7 +20,8 @@ OBJS += src/libraries/upng.o src/libraries/ini.o \
 # Main
 OBJS += src/main.o src/objectpool.o src/hash.o src/pad.o \
     src/util.o src/startgame.o src/textcheats.o src/cheats.o \
-    src/graphics.o src/saves.o src/menus.o src/settings.o
+    src/graphics.o src/saves.o src/menus.o src/settings.o \
+    src/keyboard.o
 
 # Save Formats
 OBJS += src/saveformats/util.o src/saveformats/cbs.o src/saveformats/psu.o src/saveformats/zip.o src/saveformats/max.o
