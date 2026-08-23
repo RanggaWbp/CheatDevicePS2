@@ -68,7 +68,9 @@ int main(int argc, char *argv[])
     }
 #endif
     
+    DPRINTF("[CKPT] before loadModules\n");
     ret = loadModules(booting_from_hdd);
+    DPRINTF("[CKPT] after loadModules ret=%d\n", ret);
     if (ret != 0) displayError(error);
 #ifdef HDD
     if (ret == 0 && booting_from_hdd) {
@@ -82,25 +84,34 @@ int main(int argc, char *argv[])
         }
     }
 #endif
+    DPRINTF("[CKPT] before initSettings\n");
     initSettings();
+    DPRINTF("[CKPT] before initMenus\n");
     initMenus();
+    DPRINTF("[CKPT] after initMenus\n");
     
     char *readOnlyPath = settingsGetReadOnlyDatabasePath();
+    DPRINTF("[CKPT] readOnlyPath=%s\n", readOnlyPath ? readOnlyPath : "(null)");
     if(readOnlyPath && !cheatsOpenDatabase(readOnlyPath, 1))
     {
         sprintf(error, "Error loading read-only cheat database \"%s\"!", readOnlyPath);
         displayError(error);
     }
+    DPRINTF("[CKPT] after readOnly cheatsOpenDatabase\n");
 
     char *readWritePath = settingsGetReadWriteDatabasePath();
+    DPRINTF("[CKPT] readWritePath=%s\n", readWritePath ? readWritePath : "(null)");
     if(readWritePath && !cheatsOpenDatabase(readWritePath, 0))
     {
         sprintf(error, "Error loading read/write cheat database \"%s\"!", readWritePath);
         displayError(error);
     }
+    DPRINTF("[CKPT] after readWrite cheatsOpenDatabase\n");
     
     cheatsLoadGameMenu();
+    DPRINTF("[CKPT] after cheatsLoadGameMenu\n");
     cheatsLoadHistory();
+    DPRINTF("[CKPT] after cheatsLoadHistory, entering main loop\n");
 
     /* Main Loop */
     while(1)
