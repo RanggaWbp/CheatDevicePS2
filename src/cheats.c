@@ -48,6 +48,7 @@ static cheatDatabaseHandler_t cheatDatabaseHandlers[] = {
 static const char *HELP_TICKER_GAMES = \
     "{CROSS} Cheat List     "
     "{SQUARE} Options     "
+    "{TRIANGLE} Search     "
     "{CIRCLE} Main Menu     "
     "{L1}/{R1} Page Up/Down     "
     "{L2}/{R2} Alphabetical Up/Down";
