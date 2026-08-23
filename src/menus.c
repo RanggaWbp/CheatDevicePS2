@@ -13,13 +13,6 @@
 #include "util.h"
 #include "keyboard.h"
 
-// Number of items currently navigable: the full list, or the filtered
-// subset when a search is active.
-static inline unsigned int effectiveCount()
-{
-    return activeMenu->searchActive ? activeMenu->numFiltered : activeMenu->numItems;
-}
-
 static menuState_t menues[NUMMENUS];
 static menuState_t *activeMenu = NULL;
 static int initialized = 0;
@@ -30,6 +23,13 @@ static const char *tempHelpTickerText = NULL;
 static int  tempHelpTickerLength = 0;
 
 #define CHUNK_SIZE 1000
+
+// Number of items currently navigable: the full list, or the filtered
+// subset when a search is active.
+static inline unsigned int effectiveCount()
+{
+    return activeMenu->searchActive ? activeMenu->numFiltered : activeMenu->numItems;
+}
 
 int initMenus()
 {
