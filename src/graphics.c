@@ -671,6 +671,16 @@ static void drawMenu(const menuIcon_t icons[], int numIcons, int activeItem)
     {
         float cardX = startX + i * (cardW + gap);
         int isActive = (activeItem == i);
+        GSTEXTURE *tex = icons[i].tex;
+        float iconX;
+        float iconY;
+        float textWidth;
+        float textX;
+
+        // Explicitly disable texturing before drawing solid-color quads.
+        // Leaving texture state from a previous draw call active is
+        // tolerated by emulators but can hang real hardware.
+        gsKit_set_primalpha(gsGlobal, GS_SETREG_ALPHA(0,1,0,1,0), 0);
 
         if(isActive)
         {
@@ -686,10 +696,11 @@ static void drawMenu(const menuIcon_t icons[], int numIcons, int activeItem)
             graphicsDrawQuad(cardX, cardY, cardW, cardH, COLOR_CARD_BG);
         }
 
+        gsKit_set_primalpha(gsGlobal, GS_BLEND_BACK2FRONT, 0);
+
         // Center the icon texture within the card, above the label.
-        GSTEXTURE *tex = icons[i].tex;
-        float iconX = cardX + (cardW / 2.0f) - (tex->Width / 2.0f);
-        float iconY = cardY + 18.0f;
+        iconX = cardX + (cardW / 2.0f) - (tex->Width / 2.0f);
+        iconY = cardY + 18.0f;
 
         gsKit_set_primalpha(gsGlobal, GS_SETREG_ALPHA(0,1,0,1,0), 0);
         gsKit_prim_sprite_texture(gsGlobal, tex,
@@ -705,13 +716,11 @@ static void drawMenu(const menuIcon_t icons[], int numIcons, int activeItem)
                                             0x80808080);
         gsKit_set_primalpha(gsGlobal, GS_BLEND_BACK2FRONT, 0);
 
-        {
-            float textWidth = graphicsGetWidth(icons[i].label);
-            float textX = cardX + (cardW / 2.0f) - (textWidth / 2.0f);
-            graphicsDrawText(textX, cardY + cardH - 20,
-                              isActive ? COLOR_WHITE : COLOR_MUTED,
-                              "%s", icons[i].label);
-        }
+        textWidth = graphicsGetWidth(icons[i].label);
+        textX = cardX + (cardW / 2.0f) - (textWidth / 2.0f);
+        graphicsDrawText(textX, cardY + cardH - 20,
+                          isActive ? COLOR_WHITE : COLOR_MUTED,
+                          "%s", icons[i].label);
     }
 }
 
