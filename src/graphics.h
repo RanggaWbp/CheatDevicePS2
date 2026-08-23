@@ -25,6 +25,7 @@ typedef enum {
 } graphicsColor_t;
 
 int initGraphics();
+void graphicsDebugCheckpoint(const char *label); // on-screen debug: shows label, freezes ~1s, then continues
 
 // Draw text at (x,y) with a color
 void graphicsDrawText(float x, float y, graphicsColor_t color, const char *format, ...);
