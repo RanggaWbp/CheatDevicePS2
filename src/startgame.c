@@ -214,10 +214,15 @@ void startgameExecute(const char *path)
         boot2[sizeof(boot2) - 1] = '\0';
     }
 
-    // Databases and settings must be saved before an HDD boot path gets a
-    // chance to remount pfs0: on another partition.
+    // Databases, settings, AND the recent game/cheat history must all be
+    // saved before an HDD boot path gets a chance to remount pfs0: (read-only)
+    // on another partition. If cheatsInstallCodesForEngine() (which writes
+    // CheatHistory.bin) runs after that remount, pfs0: no longer points to
+    // Cheat Device's own writable partition, so the write silently fails and
+    // recent game/cheat selection never persists across reboots.
     cheatsSaveDatabase();
     settingsSave(NULL, 0);
+    cheatsInstallCodesForEngine();
 
     if(strncmp(boot2, "hdd0:", 5) == 0)
     {
@@ -230,7 +235,6 @@ void startgameExecute(const char *path)
 #endif
     }
 
-    cheatsInstallCodesForEngine();
     killMenus();
     killCheats();
     killSettings();
