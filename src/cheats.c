@@ -49,6 +49,7 @@ static const char *HELP_TICKER_GAMES = \
     "{CROSS} Cheat List     "
     "{SQUARE} Options     "
     "{TRIANGLE} Search     "
+    "{L3} Disable All Cheats     "
     "{CIRCLE} Main Menu     "
     "{L1}/{R1} Page Up/Down     "
     "{L2}/{R2} Alphabetical Up/Down";
@@ -56,6 +57,7 @@ static const char *HELP_TICKER_GAMES = \
 static const char *HELP_TICKER_CHEATS = \
     "{CROSS} Enable/Disable Cheat     "
     "{SQUARE} Options     "
+    "{SELECT} Disable All Cheats     "
     "{CIRCLE} Game List    "
     "{L1}/{R1} Page Up/Down     "
     "{L2}/{R2} Section Up/Down";
@@ -1219,6 +1221,34 @@ int cheatsGetNumCheats()
 int cheatsGetNumEnabledCheats()
 {
     return numEnabledCheats;
+}
+
+// Disable every currently-enabled cheat for the active game in one call,
+// instead of the player having to toggle each one off individually.
+// Returns 0 if there was nothing to do.
+int cheatsDisableAllCheats()
+{
+    if(!activeGame || numEnabledCheats == 0)
+        return 0;
+
+    cheatsCheat_t *cheat = activeGame->cheats;
+    while(cheat)
+    {
+        if(cheat->enabled)
+        {
+            cheat->enabled = 0;
+            numEnabledCheats--;
+            numEnabledCodes -= cheat->numCodeLines;
+        }
+
+        cheat = cheat->next;
+    }
+
+    // Matches cheatsToggleCheat()'s existing behavior: no cheats enabled
+    // means no active game.
+    activeGame = NULL;
+
+    return 1;
 }
 
 int cheatsToggleCheat(cheatsCheat_t *cheat)
