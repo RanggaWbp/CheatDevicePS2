@@ -208,6 +208,9 @@ endif
 ifeq ($(PRINTF),COMMON)
   EE_CFLAGS += -DCOMMON_PRINTF
 endif
+ifeq ($(DEBUG_CHECKPOINTS),1)
+  EE_CFLAGS += -DDEBUG_CHECKPOINTS
+endif
 
 include $(PS2SDK)/samples/Makefile.pref
 include $(PS2SDK)/samples/Makefile.eeglobal
