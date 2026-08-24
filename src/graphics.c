@@ -661,12 +661,12 @@ static void drawMenu(const menuIcon_t icons[], int numIcons, int activeItem)
     int i;
 
     const u64 unselected =
-        GS_SETREG_RGBAQ(0x50, 0x50, 0x50, 0x60, 0x80);
+        GS_SETREG_RGBAQ(0x50, 0x50, 0x50, 0x20, 0x80);
 
     const u64 selected =
         GS_SETREG_RGBAQ(0x50, 0x50, 0x50, 0x80, 0x80);
 
-    graphicsDrawPromptBoxBlack(350, 150);
+    drawPromptBox(350, 150, GS_SETREG_RGBAQ(0x22, 0x22, 0xEE, 0x60, 0x80)); // ganti R,G,B,A di sini
     
     for(i = 0; i < numIcons; i++)
     {
@@ -861,7 +861,7 @@ void graphicsDrawAboutPage()
         "Cheat Device " GIT_VERSION "\n"
         "Compiled " __DATE__ " " __TIME__ "\n"
         "\n"
-        "Created by wesley castro, maintained by RanggaWbp\n"
+        "Created by wesley castro, maintained by El_isra\n"
 #ifdef EXFAT
 "EXFAT:1 "
 #endif
@@ -1297,16 +1297,33 @@ void graphicsDrawKeyboard(
 }
 void graphicsDebugCheckpoint(const char *label)
 {
+#ifdef DEBUG_CHECKPOINTS
     // Deliberately bypasses menuRender()/graphicsRender()'s double-buffer
     // queueing: this must work even before initMenus() has run (activeMenu
     // is still NULL at the earliest checkpoints), and it must show up on
     // screen immediately, even if the program hangs right after this call.
-    gsKit_clear(gsGlobal, GS_SETREG_RGBAQ(0x00, 0x00, 0x00, 0x80, 0x00));
-    graphicsDrawText(20, 20, COLOR_WHITE, "%s", label);
-    gsKit_set_finish(gsGlobal);
-    gsKit_queue_exec(gsGlobal);
-    gsKit_finish();
-    gsKit_sync_flip(gsGlobal);
+    //
+    // Draw+flip twice so BOTH framebuffers get cleared and show the same
+    // text. Otherwise, since this bypasses graphicsRender()'s buffer
+    // tracking, the buffer that's currently off-screen keeps whatever
+    // checkpoint text was drawn to it last time, and it flashes back into
+    // view (visually "colliding" with the newer message) on the next flip.
+    int i;
+    for(i = 0; i < 2; i++)
+    {
+        gsKit_clear(gsGlobal, GS_SETREG_RGBAQ(0x00, 0x00, 0x00, 0x80, 0x00));
+        graphicsDrawText(20, 20, COLOR_WHITE, "%s", label);
+        gsKit_set_finish(gsGlobal);
+        gsKit_queue_exec(gsGlobal);
+        gsKit_finish();
+        gsKit_sync_flip(gsGlobal);
+    }
+#else
+    // No-op in normal builds: these startup checkpoints are a development
+    // aid for diagnosing hangs during boot, not something end users should
+    // ever see on screen. Rebuild with DEBUG_CHECKPOINTS=1 to re-enable.
+    (void)label;
+#endif
 }
 
 void graphicsRender()
