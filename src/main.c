@@ -27,8 +27,8 @@ int main(int argc, char *argv[])
 {
     DPRINTF_INIT();
     int ret = 0;
-    printf("Cheat Device. By wesley castro. Maintained by El_isra\n Compilation " __DATE__ " " __TIME__ "\n");
-    DPRINTF("Cheat Device. By wesley castro. Maintained by El_isra\n Compilation " __DATE__ " " __TIME__ "\n");
+    printf("Cheat Device. By wesley castro. Maintained by RanggaWbp\n Compilation " __DATE__ " " __TIME__ "\n");
+    DPRINTF("Cheat Device. By wesley castro. Maintained by RanggaWbp\n Compilation " __DATE__ " " __TIME__ "\n");
     initGraphics();
 #ifndef NO_DPRINTF
     for (ret=0;ret<argc;ret++) {DPRINTF("argv[%d]: '%s'\n", ret, argv[ret]);}
