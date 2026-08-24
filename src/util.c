@@ -346,6 +346,17 @@ void handlePad()
 
         if(pad_pressed & PAD_TRIANGLE)
             menuOpenSearch();
+        else if(pad_pressed & PAD_L3)
+        {
+            if(cheatsGetNumEnabledCheats() > 0)
+            {
+                const char *items[] = {"Yes", "No"};
+                int choice = displayPromptMenu(items, 2, "Disable all active cheats?");
+
+                if(choice == 0)
+                    cheatsDisableAllCheats();
+            }
+        }
 
         if(pad_pressed & PAD_CIRCLE || pad_pressed & PAD_START)
         {
