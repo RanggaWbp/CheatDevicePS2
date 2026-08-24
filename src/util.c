@@ -383,6 +383,17 @@ void handlePad()
             menuSetActive(MENU_GAMES);
         else if(pad_pressed & PAD_START)
             menuSetActive(MENU_MAIN);
+        else if(pad_pressed & PAD_SELECT)
+        {
+            if(cheatsGetNumEnabledCheats() > 0)
+            {
+                const char *items[] = {"Yes", "No"};
+                int choice = displayPromptMenu(items, 2, "Disable all active cheats?");
+
+                if(choice == 0)
+                    cheatsDisableAllCheats();
+            }
+        }
     }
 
     else if(currentMenu == MENU_CODES)
