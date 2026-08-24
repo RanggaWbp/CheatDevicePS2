@@ -661,7 +661,7 @@ static void drawMenu(const menuIcon_t icons[], int numIcons, int activeItem)
     int i;
 
     const u64 unselected =
-        GS_SETREG_RGBAQ(0x50, 0x50, 0x50, 0x20, 0x80);
+        GS_SETREG_RGBAQ(0x50, 0x50, 0x50, 0x60, 0x80);
 
     const u64 selected =
         GS_SETREG_RGBAQ(0x50, 0x50, 0x50, 0x80, 0x80);
