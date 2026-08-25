@@ -3,12 +3,12 @@ Cheat Device for PS2
 
 The [official CheatDevice repository](https://github.com/root670/CheatDevicePS2/) has been marked as archive (the project is abandoned) since Mar 18, 2023.
 
-this fork is a maintained mirror by El_isra (aka: Matías Israelson)
-with exfat support and some tweaks.
+This fork is maintained by RanggaWbp, based on the
+[israpps/CheatDevicePS2](https://github.com/israpps/CheatDevicePS2) fork by
+El_isra (aka: Matías Israelson), which added exfat support and other tweaks.
 
-
-[![Downloads](https://img.shields.io/github/downloads/israpps/CheatDevicePS2/total.svg)](https://github.com/israpps/CheatDevicePS2/releases)
-[![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](https://github.com/israpps/CheatDevicePS2/blob/master/LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/RanggaWbp/CheatDevicePS2/total.svg)](https://github.com/RanggaWbp/CheatDevicePS2/releases)
+[![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](https://github.com/RanggaWbp/CheatDevicePS2/blob/master/LICENSE)
 
 Cheat Device is a game enhancer for PlayStation 2 games similar to Action 
 Replay, GameShark, and CodeBreaker. It supports booting retail, disc based 
@@ -23,6 +23,9 @@ using Cheat Device.
 * Fast loading of large cheat lists
 * Save manager for backing up and restoring game saves to/from a flash drive
 * Powered by ps2rd's powerful cheat engine
+* Cheat list search
+* Consistent "Disable All Cheats" shortcut ({L3}) on both the Game List and
+  Cheat List screens
 
 ## Compiling
 If you have Docker installed, it's easiest to compile Cheat Device using my
