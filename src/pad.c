@@ -21,18 +21,25 @@ void padInitialize()
     padInit(0);
     padPortOpen(0, 0, padBuff);
 
-    // Coba mode analog dulu supaya L3/R3 kebaca.
-    padSetMainMode(0, 0, PAD_MMODE_DUALSHOCK, PAD_MMODE_LOCK);
-
-    // Tunggu status stabil supaya padInfoMode() bisa dipercaya.
+    // Tunggu pad siap SEBELUM minta ganti mode — kalau langsung dipanggil
+    // setelah padPortOpen() tanpa nunggu ini, padSetMainMode() bisa gagal
+    // diam-diam dan mode tetap di default.
     int state = padGetState(0, 0);
     while((state != PAD_STATE_STABLE) && (state != PAD_STATE_FINDCTP1))
         state = padGetState(0, 0);
 
-    // Kalau controller/wireless pad tidak benar-benar masuk mode DualShock
-    // (mis. clone/wireless pad yang tidak support), fallback ke digital
-    // supaya tombol lain tetap normal; hanya L3/R3 yang tidak berfungsi,
-    // sama seperti behavior sebelumnya.
+    // Coba mode analog supaya L3/R3 kebaca.
+    padSetMainMode(0, 0, PAD_MMODE_DUALSHOCK, PAD_MMODE_LOCK);
+
+    // Tunggu status stabil lagi setelah ganti mode, baru padInfoMode()
+    // bisa dipercaya.
+    state = padGetState(0, 0);
+    while((state != PAD_STATE_STABLE) && (state != PAD_STATE_FINDCTP1))
+        state = padGetState(0, 0);
+
+    // Kalau controller tidak benar-benar masuk mode DualShock (mis. clone/
+    // wireless pad yang tidak support), fallback ke digital supaya tombol
+    // lain tetap normal.
     if(padInfoMode(0, 0, PAD_MODECURID, 0) != PAD_TYPE_DUALSHOCK)
     {
         padSetMainMode(0, 0, PAD_MMODE_DIGITAL, PAD_MMODE_LOCK);
