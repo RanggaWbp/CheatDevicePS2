@@ -367,34 +367,34 @@ void handlePad()
             graphicsDrawAboutPage();
     }
 
-    else if(currentMenu == MENU_CHEATS)
-    {
-        if(pad_rapid & PAD_R1)
-            menuDownRepeat(10);
-        else if(pad_rapid & PAD_L1)
-            menuUpRepeat(10);
+       else if(currentMenu == MENU_CHEATS)
+     {
+         if(pad_rapid & PAD_R1)
+             menuDownRepeat(10);
+         else if(pad_rapid & PAD_L1)
+             menuUpRepeat(10);
 
-        if(pad_rapid & PAD_R2)
-            menuGoToNextHeader();
-        else if(pad_rapid & PAD_L2)
-            menuGoToPreviousHeader();
+         if(pad_rapid & PAD_R2)
+             menuGoToNextHeader();
+         else if(pad_rapid & PAD_L2)
+             menuGoToPreviousHeader();
 
-        if(pad_pressed & PAD_CIRCLE)
-            menuSetActive(MENU_GAMES);
-        else if(pad_pressed & PAD_START)
-            menuSetActive(MENU_MAIN);
-        else if(pad_pressed & PAD_SELECT)
-        {
-            if(cheatsGetNumEnabledCheats() > 0)
-            {
-                const char *items[] = {"Yes", "No"};
-                int choice = displayPromptMenu(items, 2, "Disable all active cheats?");
+         if(pad_pressed & PAD_CIRCLE)
+             menuSetActive(MENU_GAMES);
+         else if(pad_pressed & PAD_START)
+             menuSetActive(MENU_MAIN);
+         else if(pad_pressed & PAD_L3)
+         {
+             if(cheatsGetNumEnabledCheats() > 0)
+             {
+                 const char *items[] = {"Yes", "No"};
+                 int choice = displayPromptMenu(items, 2, "Disable all active cheats?");
 
-                if(choice == 0)
-                    cheatsDisableAllCheats();
-            }
-        }
-    }
+                 if(choice == 0)
+                     cheatsDisableAllCheats();
+             }
+         }
+     }
 
     else if(currentMenu == MENU_CODES)
     {
