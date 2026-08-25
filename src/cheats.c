@@ -57,7 +57,7 @@ static const char *HELP_TICKER_GAMES = \
 static const char *HELP_TICKER_CHEATS = \
     "{CROSS} Enable/Disable Cheat     "
     "{SQUARE} Options     "
-    "{SELECT} Disable All Cheats     "
+    "{L3} Disable All Cheats     "
     "{CIRCLE} Game List    "
     "{L1}/{R1} Page Up/Down     "
     "{L2}/{R2} Section Up/Down";
