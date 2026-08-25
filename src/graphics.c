@@ -861,7 +861,7 @@ void graphicsDrawAboutPage()
         "Cheat Device " GIT_VERSION "\n"
         "Compiled " __DATE__ " " __TIME__ "\n"
         "\n"
-        "Created by wesley castro, maintained by El_isra\n"
+        "Created by wesley castro, maintained by RanggaWbp\n"
 #ifdef EXFAT
 "EXFAT:1 "
 #endif
