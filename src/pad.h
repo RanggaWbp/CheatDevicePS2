@@ -9,6 +9,13 @@ typedef enum delayTime {
     DELAYTIME_SLOW = 6
 } delayTime_t;
 
+// Batas maksimum percobaan padGetState() sebelum menyerah untuk frame ini.
+// Ini bukan satuan waktu (busy-loop, bukan sleep), jadi dipilih cukup besar
+// agar controller kabel/BT yang normal tetap selalu lolos dalam batas ini,
+// tapi tidak sampai membuat aplikasi macet total kalau controller memang
+// sedang tidak tersambung.
+#define PAD_STATE_WAIT_MAX_TRIES 2000000
+
 // Initialize pad
 void padInitialize();
 
