@@ -26,6 +26,8 @@ jobs:
         export PS2DEV=/usr/local/ps2dev
         export PS2SDK=$PS2DEV/ps2sdk
         export PATH=$PATH:$PS2DEV/bin:$PS2DEV/ee/bin:$PS2DEV/iop/bin:$PS2DEV/dvp/bin:$PS2DEV/ps2sdk/bin
+        sudo mkdir -p $PS2DEV
+        sudo chown $(whoami):$(whoami) $PS2DEV
         git clone https://github.com/ps2dev/ps2dev.git /tmp/ps2dev
         cd /tmp/ps2dev
         ./build-all.sh
