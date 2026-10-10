@@ -17,7 +17,7 @@ jobs:
     steps:
     - name: Install dependencies
       run: |
-        apk add --no-cache build-base git zip gcompat libc6-compat
+        apk add --no-cache build-base git zip gcompat libc6-compat libgcc libstdc++ musl-dev
     - name: Static analysis with cppcheck
       run: |
         cppcheck --enable=all --inconclusive src/ 2>/dev/null || true
