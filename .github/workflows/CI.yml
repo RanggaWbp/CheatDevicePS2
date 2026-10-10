@@ -12,13 +12,20 @@ jobs:
       matrix:
         opts: ["", "HDD=1", "EXFAT=1", "MMCE=1"]
     runs-on: ubuntu-latest
-    container: root670/ps2dev-docker:v1.0-gcompat
+    container: ps2dev/ps2dev:v1.0
     permissions:
       contents: read
     steps:
+    # Step 1: Install glibc compat BEFORE any Node actions
+    - name: Install glibc compatibility
+      run: |
+        apk add --no-cache gcompat libc6-compat libgcc libstdc++ musl-dev
+        ln -sf /usr/lib/libc6-compat.so /usr/lib/libc.so
+        ldconfig
+    # Step 2: Now checkout works (Node action needs glibc)
     - uses: actions/checkout@v4
     - run: |
-        git config --global --add safe-directory "$GITHUB_WORKSPACE"
+        git config --global --add safe.directory "$GITHUB_WORKSPACE"
         git fetch --prune --unshallow --tags
     - name: Compile cheat device
       run: |
@@ -59,7 +66,7 @@ jobs:
     - name: Create release
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: "${{ steps.tag.outputs.tag }}"
+        tag_name: ${{ steps.tag.outputs.tag }}
         name: "Build ${{ steps.tag.outputs.tag }}"
         prerelease: false
         make_latest: true
