@@ -18,7 +18,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        apk add build-base git zip
+        apk add build-base git zip gcompat libc6-compat
 
     - uses: actions/checkout@v4
     - run: |
