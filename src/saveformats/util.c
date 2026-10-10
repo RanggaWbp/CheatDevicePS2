@@ -5,6 +5,6 @@
 void drawCopyProgress(float progress)
 {
     graphicsDrawLoadingBar(50, 350, progress);
-    graphicsDrawTextCentered(310, COLOR_YELLOW, "Copying save...");
+    graphicsDrawTextCentered(310, COLOR_MUTED, "Copying save...");
     graphicsRender();
 }

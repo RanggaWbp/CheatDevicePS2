@@ -161,7 +161,7 @@ void startgameExecute(const char *path)
         if(!discPrompt())
             return;
 
-        graphicsDrawTextCentered(310, COLOR_YELLOW, "Starting game...");
+        graphicsDrawTextCentered(310, COLOR_MUTED, "Starting game...");
         graphicsRender();
 
         // Wait for disc to be ready

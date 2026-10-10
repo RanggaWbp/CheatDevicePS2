@@ -14,14 +14,10 @@
 typedef enum {
     COLOR_BLACK,
     COLOR_WHITE,
-    COLOR_RED,
-    COLOR_GREEN,
-    COLOR_BLUE,
-    COLOR_YELLOW,
-    COLOR_ACCENT,     // Flat accent blue for active/highlighted UI elements
-    COLOR_CARD_BG,    // Dark card background for menu items
-    COLOR_CARD_BG_ACTIVE, // Slightly lighter card background for active items
-    COLOR_MUTED        // Muted gray text for inactive labels
+    COLOR_ACCENT,        // Primary accent - modern blue for active/highlighted UI elements
+    COLOR_CARD_BG,       // Card background for menu items
+    COLOR_CARD_BG_ACTIVE,// Active item background (subtle highlight)
+    COLOR_MUTED          // Muted gray text for inactive labels/subtext
 } graphicsColor_t;
 
 // Draw a full-screen black clear + label text and display it immediately

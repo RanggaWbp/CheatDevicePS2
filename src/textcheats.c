@@ -211,7 +211,7 @@ int textCheatsSave(const char *path, const cheatsGame_t *games, char *error, int
     }
 
     graphicsDrawLoadingBar(50, 350, 0.0);
-    graphicsDrawTextCentered(310, COLOR_YELLOW, "Saving cheat database...");
+    graphicsDrawTextCentered(310, COLOR_MUTED, "Saving cheat database...");
     graphicsRender();
 
     clock_t start = clock();

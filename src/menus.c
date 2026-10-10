@@ -659,7 +659,7 @@ static void drawHelpTicker()
         waitFrames = TICKER_WAIT_FRAMES;
     }
 
-    graphicsDrawText(helpTickerX, 405, COLOR_WHITE, text);
+    graphicsDrawText(helpTickerX, 405, COLOR_ACCENT, text);
 }
 
 static void drawTitle()
@@ -761,28 +761,28 @@ static void drawMenuItems()
                 if(activeMenu->identifier == MENU_CHEATS &&
                    cheat->enabled)
                 {
-                    graphicsDrawText(50, y, COLOR_YELLOW, item->text);
+                    graphicsDrawText(50, y, COLOR_MUTED, item->text);
 
                     if(cheat->type == CHEAT_VALUE_MAPPED)
                     {
                         cheatsGame_t *game = activeMenu->extra;
                         // Too much indirection...
                         const char *selection = getNthString(game->valueMaps[cheat->valueMapIndex].keys, cheat->valueMapChoice);
-                        graphicsDrawTextRightJustified(graphicsGetDisplayWidth() - 60, y, COLOR_YELLOW, selection);
+                        graphicsDrawTextRightJustified(graphicsGetDisplayWidth() - 60, y, COLOR_MUTED, selection);
                     }
                 }
                 else if(activeMenu->identifier == MENU_GAMES &&
                         cheatsIsActiveGame((cheatsGame_t *) item->extra) &&
                         cheatsGetNumEnabledCheats() > 0)
                 {
-                    graphicsDrawText(50, y, COLOR_YELLOW, item->text);
+                    graphicsDrawText(50, y, COLOR_MUTED, item->text);
                 }
                 else
                     graphicsDrawText(50, y, rowColor, item->text);
             }
             else
             {
-                graphicsDrawText(50, y, COLOR_GREEN, item->text);
+                graphicsDrawText(50, y, COLOR_ACCENT, item->text);
             }
 
             if(item->type == MENU_ITEM_HAMBURGER_BUTTON)

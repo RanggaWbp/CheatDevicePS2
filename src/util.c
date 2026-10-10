@@ -928,8 +928,8 @@ static int displayCodeEditMenu(u64 *code, const int isNewCode)
         else if(row == CODE_KEYBOARD_CANCEL_ROW)
             graphicsDrawQuad(graphicsGetDisplayWidth()/2.0 - 100, 175 + (CODE_KEYBOARD_ROWS+1)*25, 200, 22, COLOR_BLUE);
 
-        graphicsDrawTextCentered(174 + CODE_KEYBOARD_ROWS*25, (row == CODE_KEYBOARD_ACCEPT_ROW) ? COLOR_YELLOW : COLOR_WHITE, "Accept");
-        graphicsDrawTextCentered(174 + (CODE_KEYBOARD_ROWS+1)*25, (row == CODE_KEYBOARD_CANCEL_ROW) ? COLOR_YELLOW : COLOR_WHITE, "Cancel");
+        graphicsDrawTextCentered(174 + CODE_KEYBOARD_ROWS*25, (row == CODE_KEYBOARD_ACCEPT_ROW) ? COLOR_MUTED : COLOR_WHITE, "Accept");
+        graphicsDrawTextCentered(174 + (CODE_KEYBOARD_ROWS+1)*25, (row == CODE_KEYBOARD_CANCEL_ROW) ? COLOR_MUTED : COLOR_WHITE, "Cancel");
 
         graphicsRender();
 
@@ -984,7 +984,7 @@ int displayPromptMenu(const char **items, int numItems, const char *header)
             int y = firstItemY + (i + numHeaderLines)*22;
             if(i == selectedItem)
                 graphicsDrawQuad((graphicsGetDisplayWidth()/2.0) - maxLength/2.0, y, maxLength, 22, COLOR_BLUE);
-            graphicsDrawTextCentered(y - 2, i == selectedItem ? COLOR_YELLOW : COLOR_WHITE, items[i]);
+            graphicsDrawTextCentered(y - 2, i == selectedItem ? COLOR_MUTED : COLOR_WHITE, items[i]);
         }
 
         graphicsRender();

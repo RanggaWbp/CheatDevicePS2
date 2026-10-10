@@ -95,14 +95,10 @@ static void graphicsLoadPNG(GSTEXTURE *tex, u8 *data, int len, int linear_filter
 static u64 graphicsColorTable[] = {
     GS_SETREG_RGBAQ(0x00,0x00,0x00,0x80,0x80), // COLOR_BLACK
     GS_SETREG_RGBAQ(0xF0,0xF0,0xF0,0x80,0x80), // COLOR_WHITE
-    GS_SETREG_RGBAQ(0xF0,0x00,0x00,0x80,0x80), // COLOR_RED
-    GS_SETREG_RGBAQ(0x00,0xF0,0x00,0x80,0x80), // COLOR_GREEN
-    GS_SETREG_RGBAQ(0x20,0x20,0xA0,0x80,0x80), // COLOR_BLUE
-    GS_SETREG_RGBAQ(0xF0,0xB0,0x00,0x80,0x80), // COLOR_YELLOW
-    GS_SETREG_RGBAQ(0x3D,0x7B,0xF0,0x80,0x80), // COLOR_ACCENT (flat blue)
-    GS_SETREG_RGBAQ(0x1A,0x1D,0x24,0x80,0x80), // COLOR_CARD_BG
-    GS_SETREG_RGBAQ(0x22,0x26,0x30,0x80,0x80), // COLOR_CARD_BG_ACTIVE
-    GS_SETREG_RGBAQ(0x8B,0x8E,0x96,0x80,0x80)  // COLOR_MUTED
+    GS_SETREG_RGBAQ(0x3D,0x7B,0xF0,0x80,0x80), // COLOR_ACCENT - modern blue accent
+    GS_SETREG_RGBAQ(0x1A,0x1D,0x24,0x80,0x80), // COLOR_CARD_BG - dark card background
+    GS_SETREG_RGBAQ(0x22,0x26,0x30,0x80,0x80), // COLOR_CARD_BG_ACTIVE - active item bg
+    GS_SETREG_RGBAQ(0x8B,0x8E,0x96,0x80,0x80)  // COLOR_MUTED - muted/subtext gray
 };
 
 int VBlankStartSema;
@@ -439,7 +435,7 @@ static void graphicsPrintText(float x, float y, const char *txt, u64 color)
             if(ret != NULL)
             {
                 u64 graphicColor;
-                if(color == graphicsColorTable[COLOR_YELLOW])
+                if(color == graphicsColorTable[COLOR_WHITE])
                 {
                     graphicColor = color;
                 }
@@ -611,7 +607,7 @@ void graphicsDrawLoadingBar(float x, float y, float progress)
 {
     float height = 10.0f;
     float width = gsGlobal->Width - 2.0f*x;
-    u64 color = graphicsColorTable[COLOR_BLUE];
+    u64 color = graphicsColorTable[COLOR_ACCENT];
     u64 outline = graphicsColorTable[COLOR_BLACK];
 
     if(progress < 0.0f)
@@ -885,7 +881,7 @@ void graphicsDrawAboutPage()
     displayError(msg);
 }
 
-void graphicsDrawSearchBox(const char *text)
+static void graphicsDrawSearchBox(const char *text)
 {
     int w = graphicsGetDisplayWidth();
     int boxW = w - 80;
