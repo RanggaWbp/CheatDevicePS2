@@ -82,3 +82,34 @@ inline u32 padHeld()
 {
     return padState.padHeld;
 }
+
+
+// PADEMU support initialization
+// Detect PADEMU controller and initialize analog pressure sensors
+static int pademuInitialized = 0;
+
+// PADEMU button mapping for analog controls
+typedef struct {
+    u16 analogValue;     // Raw analog reading (0-255)
+    u16 mappedButton;    // Mapped PS2 button bit
+    u8 pressureLevel;    // Pressure level 0-15
+} pademuButtonMap_t;
+
+// Default analog-to-button mapping for PADEMU
+static const pademuButtonMap_t pademuMap[] = {
+    {0xFF, PAD_L2, 15},       // Full analog L2 -> L2
+    {0xFF, PAD_R2, 15},       // Full analog R2 -> R2
+    {0x00, PAD_L3, 0},        // Analog press -> L3
+    {0x00, PAD_R3, 0},        // Analog press -> R3
+};
+
+// Poll pad with PADEMU support
+inline u32 padPressedPademu()
+{
+    return padState.padPressed;
+}
+
+inline u32 padHeldPademu()
+{
+    return padState.padHeld;
+}

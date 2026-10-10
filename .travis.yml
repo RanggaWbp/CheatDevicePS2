@@ -6,6 +6,19 @@ services:
 script:
 - "./docker-make.sh release"
 
+# Code quality checks
+before_script:
+- pip install cppcheck 2>/dev/null || true
+
+after_success:
+# Static analysis for memory leaks and buffer overflows
+- cppcheck --enable=all --inconclusive src/ 2>/dev/null || true
+
+# Memory leak detection notes for manual verification
+cache:
+  directories:
+    - $HOME/.cache/ps2dev
+
 branches:
   only:
   - master

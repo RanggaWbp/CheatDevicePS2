@@ -287,6 +287,7 @@ static int displayAddGame()
 
     // Add game to menu
     menuItem_t *item = calloc(1, sizeof(menuItem_t));
+    if (!item) return 0;
     item->type = MENU_ITEM_NORMAL;
     item->text = strdup(newGame->title);
     item->extra = newGame;
@@ -413,6 +414,7 @@ static int displayAddCheat(cheatsGame_t *game)
 
     // Add cheat to menu
     menuItem_t *item = calloc(1, sizeof(menuItem_t));
+    if (!item) return 0;
     item->type = MENU_ITEM_NORMAL;
     item->text = strdup(newCheat->title);
     item->extra = newCheat;
@@ -519,7 +521,9 @@ static int displayAddCodeLine(cheatsGame_t *game, cheatsCheat_t *cheat)
     {
         // Need to allocate more space to add another code line
         game->codeLinesCapacity *= 2;
-        game->codeLines = realloc(game->codeLines, game->codeLinesCapacity * sizeof(u64));
+        u64 *newCodeLines = realloc(game->codeLines, game->codeLinesCapacity * sizeof(u64));
+    if (!newCodeLines) return -1;
+    game->codeLines = newCodeLines;
     }
 
     // Move all subsequent cheat's code lines to make room for the new code

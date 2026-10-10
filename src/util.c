@@ -1108,8 +1108,8 @@ char* getFileBasename(const char *filename)
         return NULL;
 
     int extensionIndex = extensionStart - filename;
-    char *ret = calloc(extensionIndex, 1);
-    strncpy(ret, filename, extensionIndex - 1);
+    char *ret = calloc(extensionIndex + 1, 1);
+    strncpy(ret, filename, extensionIndex);
 
     return ret;
 }
