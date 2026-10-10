@@ -15,6 +15,17 @@ jobs:
     permissions:
       contents: read
     steps:
+    - name: Install glibc compatibility
+      run: |
+        # Add glibc compatibility for Node.js in Alpine container
+        apk add --no-cache gcompat libc6-compat libgcc libstdc++ musl-dev
+        # Create symlink for pthread_getname_np workaround
+        ln -sf /usr/lib/libc6-compat.so /usr/lib/libc.so 2>/dev/null || true
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'pip'
     - name: Install dependencies
       run: |
         apk add --no-cache build-base git zip gcompat libc6-compat libgcc libstdc++ musl-dev
