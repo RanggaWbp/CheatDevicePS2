@@ -4,6 +4,7 @@ on:
   push:
   repository_dispatch:
     types: [run_build]
+
 jobs:
   build:
     strategy:
@@ -11,79 +12,56 @@ jobs:
       matrix:
         opts: ["", "HDD=1", "EXFAT=1", "MMCE=1"]
     runs-on: ubuntu-latest
+    container: root670/ps2dev-docker:v1.0-gcompat
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential git zip cmake wget
-
-      - name: Install PS2 Toolchain
-        run: |
-          git clone --depth 1 https://github.com/ps2dev/ps2dev.git /tmp/ps2dev
-          cd /tmp/ps2dev && ./devkitps2.sh --install-dir /opt/ps2dev
-          echo "/opt/ps2dev" | sudo tee /etc/apt/sources.list.d/ps2dev.list
-          echo 'export PS2DEV=/opt/ps2dev' >> $GITHUB_ENV
-          echo '/opt/ps2dev/ee/bin:/opt/ps2dev/iop/bin:/opt/ps2dev/dvp/bin:/opt/ps2dev/bin' >> $GITHUB_ENV
-
-      - name: Static analysis with cppcheck
-        run: |
-          sudo apt-get install -y cppcheck
-          cppcheck --enable=all --inconclusive src/ 2>/dev/null || true
-
-      - name: Compile cheat device
-        run: |
-          export PS2DEV=/opt/ps2dev
-          export PATH=$PS2DEV/ee/bin:$PS2DEV/iop/bin:$PS2DEV/dvp/bin:$PS2DEV/bin:$PATH
-          make clean && make CFLAGS="-Os -Wall -Wextra -Werror" release ${{ matrix.opts }}
-
-      - name: list
-        run: |
-          ls -R
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: "${{ github.event.repository.name }}-${{ matrix.opts }}"
-          path: release/*.zip
+    - uses: actions/checkout@v4
+    - run: |
+        git config --global --add safe-directory "$GITHUB_WORKSPACE"
+        git fetch --prune --unshallow --tags
+    - name: Compile cheat device
+      run: |
+        make rebuild release ${{ matrix.opts }}
+    - name: list
+      run: |
+        ls -R
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: "${{ github.event.repository.name }}-${{ matrix.opts }}"
+        path: release/*.zip
 
 #######################################################
   release:
-    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/master' || github.reference == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs: build
     permissions:
       contents: write
     steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: ${{ github.event.repository.name }}/
-          pattern: "${{ github.event.repository.name }}-*"
-          merge-multiple: true
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ${{ github.event.repository.name }}/
+        pattern: "${{ github.event.repository.name }}-*"
+        merge-multiple: true
 
-      - name: list
-        run: |
-          ls -R
+    - name: list
+      run: |
+        ls -R
 
-      - name: Set unique release tag
-        id: tag
-        run: |
-          echo "tag=build-$(date +'%Y%m%d-%H%M%S')-${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+    - name: Set unique release tag
+      id: tag
+      run: |
+        echo "tag=build-$(date +'%Y%m%d-%H%M%S')-${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
-      - name: Create release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.tag.outputs.tag }}
-          name: "Build ${{ steps.tag.outputs.tag }}"
-          prerelease: false
-          make_latest: true
-          files: |
-            ${{ github.event.repository.name }}/CheatDevicePS2*.zip
+    - name: Create release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: "${{ steps.tag.outputs.tag }}"
+        name: "Build ${{ steps.tag.outputs.tag }}"
+        prerelease: false
+        make_latest: true
+        files: |
+          ${{ github.event.repository.name }}/CheatDevicePS2*.zip
