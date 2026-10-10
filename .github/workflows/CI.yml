@@ -26,8 +26,11 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/ps2dev/ps2dev.git /tmp/ps2dev
           cd /tmp/ps2dev
-          ./build-all.sh /opt/ps2dev
-          echo "PS2SDK=/opt/ps2dev" >> $GITHUB_ENV
+          export PS2DEV=/opt/ps2dev
+          export PS2SDK=/opt/ps2dev
+          ./build-all.sh $PS2DEV
+          echo "PS2DEV=$PS2DEV" >> $GITHUB_ENV
+          echo "PS2SDK=$PS2SDK" >> $GITHUB_ENV
           echo "/opt/ps2dev/ee/bin:/opt/ps2dev/iop/bin:/opt/ps2dev/dvp/bin:/opt/ps2dev/bin" >> $GITHUB_PATH
 
       - name: Static analysis with cppcheck
@@ -37,13 +40,10 @@ jobs:
 
       - name: Compile cheat device
         run: |
-          export PS2SDK=/opt/ps2dev
-          export PATH=$PS2SDK/ee/bin:$PS2SDK/iop/bin:$PS2SDK/dvp/bin:$PS2SDK/bin:$PATH
-          make rebuild release ${{ matrix.opts }}
-
-      - name: list
-        run: |
-          ls -R
+          export PS2DEV=$PS2DEV
+          export PS2SDK=$PS2SDK
+          export PATH=$PS2DEV/ee/bin:$PS2DEV/iop/bin:$PS2DEV/dvp/bin:$PS2DEV/bin:$PATH
+          make clean && make CFLAGS="-Os -Wall -Wextra -Werror" release ${{ matrix.opts }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
