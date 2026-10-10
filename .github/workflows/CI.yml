@@ -4,14 +4,12 @@ on:
   push:
   repository_dispatch:
     types: [run_build]
-
 jobs:
   build:
     strategy:
       fail-fast: false
       matrix:
         opts: ["", "HDD=1", "EXFAT=1", "MMCE=1"]
-    runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
@@ -49,7 +47,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: "${{ github.event.repository.name }}-${{ matrix.opts }}"
           path: release/*.zip
 
 #######################################################
