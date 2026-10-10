@@ -4,12 +4,14 @@ on:
   push:
   repository_dispatch:
     types: [run_build]
+
 jobs:
   build:
     strategy:
       fail-fast: false
       matrix:
         opts: ["", "HDD=1", "EXFAT=1", "MMCE=1"]
+    runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
@@ -20,12 +22,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential git zip wget
 
-      - name: Install PS2DEV Toolchain (prebuilt)
+      - name: Install PS2DEV Toolchain
         run: |
-          # Use ps2dev prebuilt toolchain installer - fast, downloads binaries
           git clone --depth 1 https://github.com/ps2dev/ps2dev.git /tmp/ps2dev
-          cd /tmp/ps2dev
-          ./devkitps2.sh --install-dir /opt/ps2dev
+          cd /tmp/ps2dev && ./devkitps2.sh --install-dir /opt/ps2dev
           echo "PS2DEV=/opt/ps2dev" >> $GITHUB_ENV
           echo "/opt/ps2dev/ee/bin:/opt/ps2dev/iop/bin:/opt/ps2dev/dvp/bin:/opt/ps2dev/bin" >> $GITHUB_PATH
 
@@ -40,16 +40,12 @@ jobs:
           export PATH=$PS2DEV/ee/bin:$PS2DEV/iop/bin:$PS2DEV/dvp/bin:$PS2DEV/bin:$PATH
           make clean && make CFLAGS="-Os -Wall -Wextra -Werror" release ${{ matrix.opts }}
 
-      - name: list
-        run: |
-          ls -R
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
+          name: "${{ github.event.repository.name }}-${{ matrix.opts }}"
           path: release/*.zip
 
-#######################################################
   release:
     if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -65,13 +61,11 @@ jobs:
           merge-multiple: true
 
       - name: list
-        run: |
-          ls -R
+        run: ls -R
 
       - name: Set unique release tag
         id: tag
-        run: |
-          echo "tag=build-$(date +'%Y%m%d-%H%M%S')-${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+        run: echo "tag=build-$(date +'%Y%m%d-%H%M%S')-${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
       - name: Create release
         uses: softprops/action-gh-release@v2
