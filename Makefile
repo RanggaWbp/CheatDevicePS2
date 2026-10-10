@@ -203,8 +203,6 @@ clean:
 	cd engine && make clean
 	cd bootstrap && make clean
 
-rebuild: clean all
-
 ifeq ($(PRINTF),EE_SIO)
   EE_CFLAGS += -DEE_SIO
 endif
