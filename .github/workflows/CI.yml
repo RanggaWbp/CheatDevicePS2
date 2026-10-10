@@ -29,6 +29,7 @@ jobs:
           export PS2DEV=/opt/ps2dev
           export PS2SDK=/opt/ps2dev
           mkdir -p $PS2DEV
+          export PATH=$PS2DEV/ee/bin:$PS2DEV/iop/bin:$PS2DEV/dvp/bin:$PS2DEV/bin:$PATH
           ./build-all.sh
           echo "PS2DEV=$PS2DEV" >> $GITHUB_ENV
           echo "PS2SDK=$PS2SDK" >> $GITHUB_ENV
